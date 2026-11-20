@@ -1,4 +1,4 @@
-﻿package com.jsj.samsungduo;
+package com.jsj.samsungduo;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
