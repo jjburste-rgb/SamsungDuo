@@ -10,7 +10,6 @@
     <string name="group_stroke">Stroke</string>
     <string name="group_text">Text</string>
     <string name="group_type">Network type</string>
-    <string name="group_perf">Battery readouts</string>
     <string name="group_spacing">Spacing</string>
     <string name="group_burn_in">Burn-in protection</string>
     <string name="group_out_signal">Out-of-ring signal</string>
@@ -115,6 +114,12 @@
     <string name="capsule_time_side_right">Time on the right</string>
     <string name="glyph_left_offset_title">Group left offset</string>
     <string name="glyph_left_offset_summary">Distance from the native status bar icons to the trio icon. Default 0, range -8.0 to +8.0dp.</string>
+    <string name="glyph_top_offset_title">Group top spacing</string>
+    <string name="glyph_top_offset_summary">Space above the group; positive moves the group down. Default 0, range -8.0 to +8.0dp; equal to \'Group bottom spacing\' keeps it centred.</string>
+    <string name="glyph_bottom_offset_title">Group bottom spacing</string>
+    <string name="glyph_bottom_offset_summary">Space below the group; positive moves the group up. Default 0, range -8.0 to +8.0dp; equal to \'Group top spacing\' keeps it centred.</string>
+    <string name="signal_dot_scale_title">Signal dot size</string>
+    <string name="signal_dot_scale_summary">Size of the level dots inside the ring, rect and capsule. Default 100%, range 50-150%. Out-of-ring dots still follow \'Out-of-ring signal size\'.</string>
 
     <string name="burn_in_protect_title">Drift the icons</string>
     <string name="burn_in_protect_summary">Lets the trio and out-of-ring icons drift within a tiny range so the same pixels are not lit for long stretches. Default on.</string>
@@ -127,22 +132,15 @@
     <string name="glyph_scale_summary" formatted="false">Overall size of the trio icon, 60-130%, default 100%. Past 100% the drawing and its reserved space grow together and the icon may overflow the status bar row, in the shade as well.</string>
     <string name="glyph_scale_summary_capped" formatted="false">Overall size of the trio icon, 60-100%, default 100%. To go past 100%, turn on "draw in its own window" first.</string>
 
-    <string name="perf_temp_title">Battery temperature</string>
-    <string name="perf_temp_summary">Shows the battery temperature next to the battery icon.</string>
-    <string name="perf_outer_margin_title">Temperature reading margin</string>
-    <string name="perf_outer_margin_summary" formatted="false">Gap between the temperature reading and the neighbour on its left. Default 2dp, range 0-16dp.</string>
-    <string name="perf_outer_margin_right_title">Temperature reading right margin</string>
-    <string name="perf_outer_margin_right_summary" formatted="false">Gap between the temperature reading and the trio icon on its right. Default 2dp, range 0-16dp.</string>
-    <string name="perf_scale_title">Readout size</string>
-    <string name="perf_scale_summary" formatted="false">Scales the whole reading up or down on top of the automatic font size, 60-150%, default 100%.</string>
-    <string name="perf_weight_title">Readout weight</string>
-    <string name="perf_weight_summary">Stroke weight of the reading text, range 100-900.</string>
-
     <string name="value_centre_title">Centre the percentage</string>
     <string name="value_centre_summary">Enlarges the battery level into the middle of the ring, where it always takes priority. The Wi-Fi arcs shrink into the top notch, and while charging a small bolt takes the notch.</string>
 
     <string name="color_role_title">State colors</string>
     <string name="color_role_summary">Pick colors for low battery, charging and critical battery.</string>
+    <string name="color_dot_title">Custom signal dot color</string>
+    <string name="color_dot_summary">When on, the signal dots use the color picked here; when off they follow the status bar foreground.</string>
+    <string name="color_dot_pick_title">Signal dot color</string>
+    <string name="color_power_save_pick_title">Power save color</string>
 
     <string name="color_low_title">Low battery color</string>
     <string name="color_charging_title">Charging color</string>
@@ -152,13 +150,13 @@
     <string name="color_on_light">Light background</string>
     <string name="color_dialog_summary">Set the color used when the status bar sits on a dark or a light background.</string>
     <string name="color_reset">Reset to default</string>
-    <string name="color_reset_summary">Restore the three state colors to their factory presets.</string>
-    <string name="color_reset_dialog_summary">All three state colors go back to their factory presets; your custom colors will be overwritten.</string>
+    <string name="color_reset_summary">Restore all state colors (including signal dots and power save) to their factory presets.</string>
+    <string name="color_reset_dialog_summary">All state colors go back to their factory presets; your custom colors will be overwritten.</string>
     <string name="color_reset_confirm">Reset</string>
 
     <string name="low_threshold_title">Low battery threshold</string>
     <string name="power_save_color_title">Power save tint</string>
-    <string name="power_save_color_summary" formatted="false">When on, the battery ring turns the low-battery yellow while the system is in power save mode. When off, the trio battery colour stays as it is. Default on.</string>
+    <string name="power_save_color_summary" formatted="false">When on, the battery uses the color picked below while the system is in power save mode (green by default). When off, the trio battery colour stays as it is.</string>
     <string name="low_threshold_summary">Switch to the low battery color below this percentage.</string>
 
     <string name="stroke_title">Ring stroke</string>
@@ -171,10 +169,10 @@
     <string name="arc_stroke_summary_rect">Width of the Wi-Fi arc stroke.</string>
 
     <string name="value_size_title">Number size</string>
-    <string name="value_size_summary">Size of the percentage text. With "centre the level" on, the centred digits grow up to 1.4x and stop at 38.</string>
+    <string name="value_size_summary">Size of the percentage text, range 16-72, default 36. With "centre the level" on, the centred digits grow up to 1.4x.</string>
 
     <string name="value_weight_title">Number weight</string>
-    <string name="value_weight_summary">Stroke weight of the battery level, range 100-900.</string>
+    <string name="value_weight_summary">Stroke weight of the battery level, range 100-1200.</string>
 
     <string name="type_size_title">Network type size</string>
     <string name="type_size_summary">Font size of the 3G/4G/5G label in the ring centre.</string>

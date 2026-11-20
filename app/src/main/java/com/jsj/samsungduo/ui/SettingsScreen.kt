@@ -162,7 +162,16 @@ private enum class RoleColor(val labelRes: Int) {
     Low(R.string.color_low_title),
     Charging(R.string.color_charging_title),
     Critical(R.string.color_critical_title),
+    Dot(R.string.color_dot_pick_title),
+    PowerSave(R.string.color_power_save_pick_title),
 }
+
+/** The three battery-state colours shown as their own rows in the colours tab. */
+private val BATTERY_ROLE_COLORS = listOf(
+    RoleColor.Low,
+    RoleColor.Charging,
+    RoleColor.Critical,
+)
 
 /**
  * The page's top-level sections, in strip order. The label reuses the section
@@ -601,6 +610,14 @@ fun SettingsScreen(repository: SettingsRepository) {
                             RoleColor.Charging ->
                                 if (onDark) repo.setColorChargingOnDark(argb)
                                 else repo.setColorChargingOnLight(argb)
+
+                            RoleColor.Dot ->
+                                if (onDark) repo.setColorDotOnDark(argb)
+                                else repo.setColorDotOnLight(argb)
+
+                            RoleColor.PowerSave ->
+                                if (onDark) repo.setColorPowerSaveOnDark(argb)
+                                else repo.setColorPowerSaveOnLight(argb)
                         }
                     }
                 },
@@ -1206,6 +1223,44 @@ private fun LazyListScope.geometryTab(
                 enabled = a.glyph,
                 onValueChange = { v -> update { it.setGlyphShift(v) } },
             )
+            // 整组上下间距：上间距往下推、下间距往上推，存储半 dp。
+            IntSlider(
+                value = settings.glyphTopOffset,
+                min = Prefs.MIN_GLYPH_TOP_OFFSET,
+                max = Prefs.MAX_GLYPH_TOP_OFFSET,
+                title = stringResource(R.string.glyph_top_offset_title),
+                summary = stringResource(R.string.glyph_top_offset_summary),
+                valueTextSuffix = "dp",
+                enabled = a.glyph,
+                onValueChange = { v -> update { it.setGlyphTopOffset(v) } },
+                valueFormatter = { v ->
+                    String.format(java.util.Locale.US, "%.1f", v / 2f)
+                },
+            )
+            IntSlider(
+                value = settings.glyphBottomOffset,
+                min = Prefs.MIN_GLYPH_BOTTOM_OFFSET,
+                max = Prefs.MAX_GLYPH_BOTTOM_OFFSET,
+                title = stringResource(R.string.glyph_bottom_offset_title),
+                summary = stringResource(R.string.glyph_bottom_offset_summary),
+                valueTextSuffix = "dp",
+                enabled = a.glyph,
+                onValueChange = { v -> update { it.setGlyphBottomOffset(v) } },
+                valueFormatter = { v ->
+                    String.format(java.util.Locale.US, "%.1f", v / 2f)
+                },
+            )
+            // 信号点大小：只作用于环内三种样式的电平点，环外读数有自己的大小项。
+            IntSlider(
+                value = settings.signalDotScale,
+                min = Prefs.MIN_SIGNAL_DOT_SCALE,
+                max = Prefs.MAX_SIGNAL_DOT_SCALE,
+                title = stringResource(R.string.signal_dot_scale_title),
+                summary = stringResource(R.string.signal_dot_scale_summary),
+                valueTextSuffix = "%",
+                enabled = a.glyph,
+                onValueChange = { v -> update { it.setSignalDotScale(v) } },
+            )
         }
     }
     item { SectionTitle(stringResource(R.string.group_stroke)) }
@@ -1506,77 +1561,6 @@ private fun LazyListScope.geometryTab(
             }
         }
     }
-    // Battery readout: temperature only. Charging power was removed in v75 -
-    // on this device the platform never reports CURRENT_NOW, and flipping the
-    // switch on made the status bar flicker. Default off, so an install that
-    // touches nothing looks exactly as it did before the feature existed.
-    item { SectionTitle(stringResource(R.string.group_perf)) }
-    item {
-        Card {
-            SwitchPreference(
-                checked = settings.perfTemp,
-                onCheckedChange = { value -> update { it.setPerfTemp(value) } },
-                title = stringResource(R.string.perf_temp_title),
-                summary = stringResource(R.string.perf_temp_summary),
-                insideMargin = SettingsItemMargin,
-                enabled = a.glyph,
-            )
-            // The knobs only move something while the switch is up, so they
-            // share one gate and one hint.
-            val perfHint = gateHint(
-                a.glyph to R.string.master_title,
-                a.perfTemp to R.string.perf_temp_title,
-            )
-            TooltipBox(text = perfHint.orEmpty(), enabled = perfHint != null) {
-                IntSlider(
-                    value = settings.perfOuterMargin,
-                    min = Prefs.MIN_PERF_OUTER_MARGIN,
-                    max = Prefs.MAX_PERF_OUTER_MARGIN,
-                    title = stringResource(R.string.perf_outer_margin_title),
-                    summary = stringResource(R.string.perf_outer_margin_summary),
-                    valueTextSuffix = "dp",
-                    enabled = a.glyph && a.perfTemp,
-                    onValueChange = { v -> update { it.setPerfOuterMargin(v) } },
-                )
-            }
-            TooltipBox(text = perfHint.orEmpty(), enabled = perfHint != null) {
-                IntSlider(
-                    value = settings.perfOuterMarginRight,
-                    min = Prefs.MIN_PERF_OUTER_MARGIN_RIGHT,
-                    max = Prefs.MAX_PERF_OUTER_MARGIN_RIGHT,
-                    title = stringResource(R.string.perf_outer_margin_right_title),
-                    summary = stringResource(R.string.perf_outer_margin_right_summary),
-                    valueTextSuffix = "dp",
-                    enabled = a.glyph && a.perfTemp,
-                    onValueChange = { v -> update { it.setPerfOuterMarginRight(v) } },
-                )
-            }
-            TooltipBox(text = perfHint.orEmpty(), enabled = perfHint != null) {
-                IntSlider(
-                    value = settings.perfScale,
-                    min = Prefs.MIN_PERF_SCALE,
-                    max = Prefs.MAX_PERF_SCALE,
-                    title = stringResource(R.string.perf_scale_title),
-                    summary = stringResource(R.string.perf_scale_summary),
-                    valueTextSuffix = "%",
-                    enabled = a.glyph && a.perfAnywhere(),
-                    onValueChange = { v -> update { it.setPerfScale(v) } },
-                )
-            }
-            TooltipBox(text = perfHint.orEmpty(), enabled = perfHint != null) {
-                IntSlider(
-                    value = settings.perfWeight,
-                    min = Prefs.MIN_PERF_WEIGHT,
-                    max = Prefs.MAX_PERF_WEIGHT,
-                    step = WEIGHT_STEP,
-                    title = stringResource(R.string.perf_weight_title),
-                    summary = stringResource(R.string.perf_weight_summary),
-                    enabled = a.glyph && a.perfAnywhere(),
-                    onValueChange = { v -> update { it.setPerfWeight(v) } },
-                )
-            }
-        }
-    }
     item { SectionTitle(stringResource(R.string.group_track)) }
     item {
         Card {
@@ -1674,7 +1658,7 @@ private fun LazyListScope.colorsTab(
                     onValueChange = { v -> update { it.setLowThreshold(v) } },
                 )
             }
-            // ★ v77：省电模式是否把电量染黄（默认开 = MIUI 语义；三星原生不染）。
+            // ★ v77：省电模式是否把电量染色（默认开 = MIUI 语义；三星原生不染）。
             TooltipBox(text = roleGate.orEmpty(), enabled = roleGate != null) {
                 SwitchPreference(
                     checked = settings.powerSaveColor,
@@ -1683,6 +1667,22 @@ private fun LazyListScope.colorsTab(
                     summary = stringResource(R.string.power_save_color_summary),
                     insideMargin = SettingsItemMargin,
                     enabled = a.glyph && a.roleColors,
+                )
+            }
+            // 省电模式使用的颜色：默认充电绿，不再固定为低电量黄。
+            TooltipBox(text = roleGate.orEmpty(), enabled = roleGate != null) {
+                ArrowPreference(
+                    title = stringResource(R.string.color_power_save_pick_title),
+                    summary = stringResource(R.string.color_field_summary),
+                    insideMargin = SettingsItemMargin,
+                    startAction = {
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Swatch(colorFor(settings, RoleColor.PowerSave, onDark = true))
+                            Swatch(colorFor(settings, RoleColor.PowerSave, onDark = false))
+                        }
+                    },
+                    enabled = a.glyph && a.roleColors,
+                    onClick = { onEdit(RoleColor.PowerSave) },
                 )
             }
             // ★ v104：充电同显 —— **两个**控件。
@@ -1720,7 +1720,7 @@ private fun LazyListScope.colorsTab(
                 // ★ 胶囊同样禁用：信号在缺口还是右列由按钮1/按钮2 决定。
                 enabled = a.glyph && a.centreValue && !a.capsule,
             )
-            RoleColor.entries.forEach { role ->
+            BATTERY_ROLE_COLORS.forEach { role ->
                 TooltipBox(text = roleGate.orEmpty(), enabled = roleGate != null) {
                     ArrowPreference(
                         title = stringResource(role.labelRes),
@@ -1737,6 +1737,28 @@ private fun LazyListScope.colorsTab(
                     )
                 }
             }
+            // 信号点颜色：开关关着时跟随状态栏前景色，与其它设置无关。
+            SwitchPreference(
+                checked = settings.dotColorCustom,
+                onCheckedChange = { value -> update { it.setDotColorCustom(value) } },
+                title = stringResource(R.string.color_dot_title),
+                summary = stringResource(R.string.color_dot_summary),
+                insideMargin = SettingsItemMargin,
+                enabled = a.glyph,
+            )
+            ArrowPreference(
+                title = stringResource(R.string.color_dot_pick_title),
+                summary = stringResource(R.string.color_field_summary),
+                insideMargin = SettingsItemMargin,
+                startAction = {
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Swatch(colorFor(settings, RoleColor.Dot, onDark = true))
+                        Swatch(colorFor(settings, RoleColor.Dot, onDark = false))
+                    }
+                },
+                enabled = a.glyph && settings.dotColorCustom,
+                onClick = { onEdit(RoleColor.Dot) },
+            )
             TooltipBox(text = roleGate.orEmpty(), enabled = roleGate != null) {
                 ArrowPreference(
                     title = stringResource(R.string.color_reset),
@@ -2703,6 +2725,8 @@ private fun colorFor(settings: TrioSettings, role: RoleColor, onDark: Boolean): 
         RoleColor.Critical -> if (onDark) settings.criticalOnDark else settings.criticalOnLight
         RoleColor.Low -> if (onDark) settings.lowOnDark else settings.lowOnLight
         RoleColor.Charging -> if (onDark) settings.chargingOnDark else settings.chargingOnLight
+        RoleColor.Dot -> if (onDark) settings.dotOnDark else settings.dotOnLight
+        RoleColor.PowerSave -> if (onDark) settings.powerSaveOnDark else settings.powerSaveOnLight
     }
 
 /** Signal levels the preview shows; the middle of each range. */

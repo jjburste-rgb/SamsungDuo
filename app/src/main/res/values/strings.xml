@@ -10,7 +10,6 @@
     <string name="group_stroke">描边</string>
     <string name="group_text">文字</string>
     <string name="group_type">网络类型</string>
-    <string name="group_perf">电池读数</string>
     <string name="group_spacing">间距</string>
     <string name="group_burn_in">防烧屏</string>
     <string name="group_out_signal">环外信号</string>
@@ -117,6 +116,12 @@
     <string name="capsule_time_side_right">时间在右</string>
     <string name="glyph_left_offset_title">整组左侧间距</string>
     <string name="glyph_left_offset_summary">调整原生状态栏到三合一图标的距离。默认 0，可调范围 -8.0～+8.0dp。</string>
+    <string name="glyph_top_offset_title">整组上间距</string>
+    <string name="glyph_top_offset_summary">整组图标上方的留白，正值把整组往下推。默认 0，可调范围 -8.0～+8.0dp；与「整组下间距」相等时保持居中。</string>
+    <string name="glyph_bottom_offset_title">整组下间距</string>
+    <string name="glyph_bottom_offset_summary">整组图标下方的留白，正值把整组往上推。默认 0，可调范围 -8.0～+8.0dp；与「整组上间距」相等时保持居中。</string>
+    <string name="signal_dot_scale_title">信号点大小</string>
+    <string name="signal_dot_scale_summary">圆环/矩形/胶囊内信号电平点的大小，默认 100%，可调范围 50–150%。环外读数的信号点仍由「环外信号大小」控制。</string>
 
     <string name="burn_in_protect_title">图标微动</string>
     <string name="burn_in_protect_summary">让三合一与环外图标在极小范围内缓慢游走，避免同一批像素长期发光留下残影。默认开启。</string>
@@ -129,22 +134,15 @@
     <string name="glyph_scale_summary" formatted="false">整个三合一图标大小调整，可调范围 60–130%，默认 100% ，超过 100% 时图形与占位一起放大、高度大于状态栏其它图标，不会遮挡原生图标。</string>
     <string name="glyph_scale_summary_capped" formatted="false">整个三合一图标大小调整，可调范围 60–100%，默认 100% ，想要突破 100% 大小限制，请先打开「解除尺寸限制」开关。</string>
 
-    <string name="perf_temp_title">电池温度</string>
-    <string name="perf_temp_summary">在电池图标旁显示电池温度。</string>
-    <string name="perf_outer_margin_title">温度读数边距</string>
-    <string name="perf_outer_margin_summary" formatted="false">温度读数与左侧邻居之间的空隙。默认 2dp，可调范围 0–16dp。</string>
-    <string name="perf_outer_margin_right_title">温度读数右边距</string>
-    <string name="perf_outer_margin_right_summary" formatted="false">温度读数与右侧三合一之间的空隙。默认 2dp，可调范围 0–16dp。</string>
-    <string name="perf_scale_title">读数整体尺寸</string>
-    <string name="perf_scale_summary" formatted="false">在自动字号之上再把读数整体放大或缩小，百分比 60–150%，默认 100%。</string>
-    <string name="perf_weight_title">读数字重</string>
-    <string name="perf_weight_summary">读数文字的笔画粗细，可调范围100-900。</string>
-
     <string name="value_centre_title">电量数字居中</string>
     <string name="value_centre_summary">电量数字放大到圆环中间并始终优先占据圆心。Wi-Fi 弧缩到顶部缺口，充电时改用小的闪电占用缺口。</string>
 
     <string name="color_role_title">状态颜色</string>
     <string name="color_role_summary">分别为低电量、充电与危险电量指定颜色。</string>
+    <string name="color_dot_title">自定义信号点颜色</string>
+    <string name="color_dot_summary">开启后信号点使用这里选定的颜色；关闭时跟随状态栏前景色。</string>
+    <string name="color_dot_pick_title">信号点颜色</string>
+    <string name="color_power_save_pick_title">省电模式颜色</string>
 
     <string name="color_low_title">低电量颜色</string>
     <string name="color_charging_title">充电颜色</string>
@@ -154,13 +152,13 @@
     <string name="color_on_light">浅色背景</string>
     <string name="color_dialog_summary">分别设置状态栏为深色与浅色背景时使用的颜色。</string>
     <string name="color_reset">恢复默认</string>
-    <string name="color_reset_summary">把三种状态颜色恢复为出厂预设。</string>
-    <string name="color_reset_dialog_summary">三种状态颜色都会回到出厂预设，当前的自定义颜色会被覆盖。</string>
+    <string name="color_reset_summary">把所有状态颜色（含信号点与省电模式）恢复为出厂预设。</string>
+    <string name="color_reset_dialog_summary">所有状态颜色都会回到出厂预设，当前的自定义颜色会被覆盖。</string>
     <string name="color_reset_confirm">恢复</string>
 
     <string name="low_threshold_title">低电量阈值</string>
     <string name="power_save_color_title">省电模式变色</string>
-    <string name="power_save_color_summary" formatted="false">开启后，系统进入省电模式时电量环会变成低电量的黄色。关闭后三合一电量颜色保持不变。默认开启。</string>
+    <string name="power_save_color_summary" formatted="false">开启后，系统进入省电模式时电量使用下面选定的颜色（默认绿色）。关闭后三合一电量颜色保持不变。</string>
     <string name="low_threshold_summary">电量低于该值时切换到低电量颜色。</string>
 
     <string name="stroke_title">环线粗细</string>
@@ -173,10 +171,10 @@
     <string name="arc_stroke_summary_rect">Wi-Fi 弧线的描边宽度。</string>
 
     <string name="value_size_title">数字字号</string>
-    <string name="value_size_summary">电量百分比文字的尺寸。注意「电量数字居中」打开时，居中的数字最大放大到原值的 1.4 倍，38 及以上不再变大。</string>
+    <string name="value_size_summary">电量百分比文字的尺寸，可调范围 16–72，默认 36。注意「电量数字居中」打开时，居中的数字最大放大到原值的 1.4 倍。</string>
 
     <string name="value_weight_title">数字字重</string>
-    <string name="value_weight_summary">电量数字的笔画粗细，可调范围100-900。</string>
+    <string name="value_weight_summary">电量数字的笔画粗细，可调范围100-1200。</string>
 
     <string name="type_size_title">网络类型字号</string>
     <string name="type_size_summary">圆环中间 3G/4G/5G 等文字的大小。</string>

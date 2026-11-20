@@ -44,12 +44,12 @@ public final class TrioAppearance {
      * neither Wi-Fi ink nor a charger to report - see {@link #dualReading}.
      */
     public final boolean dualSim;
-    /** ★ v73：电池温度读数 wanted。★ v75：功率读数已删，只剩这一项。 */
-    public final boolean perfTemp;
-    /** ★ v73：两项读数在自适应字号之上的整体缩放（%）。 */
-    public final int perfScale;
-    /** ★ v73：两项读数的字重。 */
-    public final int perfWeight;
+    /** 整组上间距（半 dp）。 */
+    public final int glyphTopOffset;
+    /** 整组下间距（半 dp）。 */
+    public final int glyphBottomOffset;
+    /** 信号点大小（%）。 */
+    public final int signalDotScale;
     /**
      * ★ v73：三合一整体尺寸（%）。
      *
@@ -105,6 +105,12 @@ public final class TrioAppearance {
     public final int lowThreshold;
     /** ★ v77：省电模式是否参与电量着色（默认开；三星原生不染色，可关）。 */
     public final boolean powerSaveTint;
+    public final int powerSaveOnDark;
+    public final int powerSaveOnLight;
+    /** 自定义信号点颜色（关 = 跟随状态栏前景色）。 */
+    public final boolean dotColorCustom;
+    public final int dotOnDark;
+    public final int dotOnLight;
     /** ★ v104：充电同显三选项（0 隐藏 / 1 圈上 / 2 圈内），**只管电量那一对**。 */
     public final int chargePairMode;
     /**
@@ -174,9 +180,9 @@ public final class TrioAppearance {
         wifi = c.showWifi;
         mobile = c.showMobile;
         dualSim = c.dualSim;
-        perfTemp = c.perfTemp;
-        perfScale = c.perfScale;
-        perfWeight = c.perfWeight;
+        glyphTopOffset = c.glyphTopOffset;
+        glyphBottomOffset = c.glyphBottomOffset;
+        signalDotScale = c.signalDotScale;
         glyphScale = c.glyphScale;
         signalMode = c.signalMode;
         signalInRing = c.signalMode == Prefs.SIGNAL_IN_RING;
@@ -199,6 +205,11 @@ public final class TrioAppearance {
         lowOnLight = c.lowOnLight;
         lowThreshold = c.lowThreshold;
         powerSaveTint = c.powerSaveColor;
+        powerSaveOnDark = c.powerSaveOnDark;
+        powerSaveOnLight = c.powerSaveOnLight;
+        dotColorCustom = c.dotColorCustom;
+        dotOnDark = c.dotOnDark;
+        dotOnLight = c.dotOnLight;
         chargePairMode = c.chargePairMode;
         chargeSignalAlso = c.chargeSignalAlso && c.valueCentred;
         // 这一排存在吗：三选项不是"隐藏"，或者信号开关开着（那也有一排）。
@@ -286,21 +297,6 @@ public final class TrioAppearance {
      */
     public boolean dualSimRows(boolean wifiInk, boolean charging, int sims) {
         return dualSim && signalDots() && sims >= 2 && !wifiInk && !charging;
-    }
-
-    /**
-     * ★ v73：读数（电池温度）有没有被打开。
-     *
-     * <p>这只是"想要"，不等于"有内容"：温度还要读得到。没有内容时
-     * 读数整块不占位（宽度 0），与原生电池隐藏同理。
-     */
-    public boolean perfAnywhere() {
-        return perfTemp;
-    }
-
-    /** ★ v73：读数整体缩放系数（1.0 = 不缩）。乘在每一种自适应答案之上。 */
-    public float perfFit() {
-        return perfScale / 100f;
     }
 
     /** ★ v73：三合一整体缩放系数（1.0 = 吃满系统给的预留区域）。 */

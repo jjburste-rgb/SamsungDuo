@@ -337,38 +337,35 @@ public final class Prefs {
      * 与 translationX（平移整组）两条路共用一个量。0 = 现在的位置。
      */
     public static final String KEY_GLYPH_SHIFT = "glyph_shift_dp";
+    /**
+     * 整组上间距（半 dp）：图标上方留出的空隙，正值把整组往下推。
+     *
+     * <p>与 {@link #KEY_GLYPH_BOTTOM_OFFSET} 配对：两者都增大时图标保持居中，
+     * 只增一边时整组朝另一边移动。锁屏行（高度最小）同样生效。
+     */
+    public static final String KEY_GLYPH_TOP_OFFSET = "glyph_top_offset_dp";
+    /** 整组下间距（半 dp）：图标下方留出的空隙，正值把整组往上推。 */
+    public static final String KEY_GLYPH_BOTTOM_OFFSET = "glyph_bottom_offset_dp";
+    /**
+     * 信号点大小，百分比 50–150（100 = 现在的尺寸）。
+     *
+     * <p>乘在圆环 / 矩形 / 胶囊三种样式的电平点半径上；环外读数的信号点
+     * 仍由「环外信号大小」控制，不重复缩放。
+     */
+    public static final String KEY_SIGNAL_DOT_SCALE = "signal_dot_scale_pct";
 
     /**
-     * ★ v73：<b>电池温度</b>读数开关（默认关）。整摄氏度，
-     * 温度是电池自身属性，不接充电器同样显示。
+     * 是否自定义信号点颜色（默认关 = 跟随状态栏前景色）。
      *
-     * <p>★ v75：充电功率读数已删除 —— 用户实测三星上不显示，且打开开关
-     * 还会让状态栏闪一下，明确说"三星不需要这个"。
+     * <p>开启后信号点使用 {@link #KEY_COLOR_DOT_ON_DARK} /
+     * {@link #KEY_COLOR_DOT_ON_LIGHT} 这两组颜色，与状态颜色同一套深浅背景逻辑。
      */
-    public static final String KEY_PERF_TEMP = "perf_temp";
-    /**
-     * ★ v73：两项读数在自适应字号之上的<b>整体</b>缩放，百分比 60–150。
-     *
-     * <p>它乘在每一种答案上（单项读数、两项都开的自适应结果、量不到宿主的
-     * 兜底值都算），所以只开一个开关时拖动它也看得见效果。
-     */
-    public static final String KEY_PERF_SCALE = "perf_scale_pct";
-    /**
-     * ★ v73：两项读数文字的笔画粗细，100 最细、900 最粗。
-     *
-     * <p>独立于「网络类型字重」：那一个同时管 5G 标签，共用会把旁边的标签
-     * 一起加粗。字重还决定行高，两项都开时的自适应字号会跟着重算。
-     */
-    public static final String KEY_PERF_WEIGHT = "perf_weight";
-    /**
-     * ★ v75：温度读数与左侧邻居（电池 / 环外信号 / 环外类型）之间的空隙，dp。
-     *
-     * <p>与 {@link #KEY_OUT_SIGNAL_MARGIN} 同语义：margin 而不是位置偏移，
-     * 从原生图标行里真实占位；它是整组最左端时，这份空隙就是"读数与电池"的距离。
-     */
-    public static final String KEY_PERF_OUTER_MARGIN = "perf_outer_margin_dp";
-    /** ★ v76：温度读数<b>右侧</b>边距（与三合一的空隙）的键。 */
-    public static final String KEY_PERF_OUTER_MARGIN_RIGHT = "perf_outer_margin_right_dp";
+    public static final String KEY_DOT_COLOR_CUSTOM = "signal_dot_color_custom";
+    public static final String KEY_COLOR_DOT_ON_DARK = "color_dot_on_dark";
+    public static final String KEY_COLOR_DOT_ON_LIGHT = "color_dot_on_light";
+    /** 省电模式电量变色：深色 / 浅色背景下的两种颜色（默认绿色）。 */
+    public static final String KEY_COLOR_POWER_SAVE_ON_DARK = "color_power_save_on_dark";
+    public static final String KEY_COLOR_POWER_SAVE_ON_LIGHT = "color_power_save_on_light";
     /**
      * ★ v75：三合一<b>整体</b>尺寸，百分比 60–120。
      *
@@ -435,13 +432,13 @@ public final class Prefs {
     public static final java.util.Set<String> STYLE_KEYS = new java.util.HashSet<>(
             java.util.Arrays.asList(
                     "glyph_scale_pct", "glyph_left_offset_dp", "glyph_shift_dp",
+                    "glyph_top_offset_dp", "glyph_bottom_offset_dp",
+                    "signal_dot_scale_pct",
                     "ring_stroke", "arc_stroke",
                     "value_size", "value_weight",
                     "type_size", "out_type_size_dp", "type_suffix_scale",
                     "out_type_margin_left_dp", "out_type_margin_right_dp", "type_weight",
                     "out_signal_size_dp", "out_signal_margin_dp",
-                    "perf_temp", "perf_outer_margin_dp", "perf_outer_margin_right_dp",
-                    "perf_scale_pct", "perf_weight",
                     "track_alpha",
                     "charge_value_size", "charge_signal_size", "charge_suffix_a_scale",
                     "mobile_type_mode", "signal_mode", "swap_wifi_value",
@@ -564,13 +561,17 @@ public final class Prefs {
     public static final int DEF_COLOR_LOW_ON_DARK = 0xFFF2B900;
     public static final int DEF_COLOR_LOW_ON_LIGHT = 0xFFC99700;
     public static final int DEF_LOW_THRESHOLD = 20;
+    /** 信号点默认跟随状态栏前景色：深色背景用白、浅色背景用黑。 */
+    public static final boolean DEF_DOT_COLOR_CUSTOM = false;
+    public static final int DEF_COLOR_DOT_ON_DARK = 0xFFFFFFFF;
+    public static final int DEF_COLOR_DOT_ON_LIGHT = 0xFF000000;
 
     /**
-     * ★ v77：是否让<b>省电模式</b>把电量染成低电量色。
+     * ★ v77：是否让<b>省电模式</b>把电量染色。
      *
-     * <p>默认 {@code true} = 保持 MIUI 原版语义（省电模式 → 电量黄）。三星原生
-     * 并不因省电模式改电池图标颜色，他人实测"高电量也显示黄色"，所以给出开关，
-     * 不想被染色的可以关掉。
+     * <p>默认 {@code true}，但颜色不再固定为低电量黄：省电模式有自己的
+     * 深浅背景两种颜色（默认绿色），见 {@link #KEY_COLOR_POWER_SAVE_ON_DARK} /
+     * {@link #KEY_COLOR_POWER_SAVE_ON_LIGHT}。关掉开关则三合一电量颜色保持不变。
      */
     public static final String KEY_POWER_SAVE_COLOR = "power_save_color";
     /**
@@ -791,10 +792,11 @@ public final class Prefs {
      * both), so the shipped spacing is unchanged.
      */
     public static final int DEF_OUT_SIGNAL_MARGIN = 2;
-    /** v75：温度读数外边距默认与其它间距项一致（2dp）。 */
-    public static final int DEF_PERF_OUTER_MARGIN = 2;
-    /** v76：温度读数右侧边距默认同左侧（2dp）。 */
-    public static final int DEF_PERF_OUTER_MARGIN_RIGHT = 2;
+    /** 整组上下间距默认 0（半 dp）：保持原有垂直位置。 */
+    public static final int DEF_GLYPH_TOP_OFFSET = 0;
+    public static final int DEF_GLYPH_BOTTOM_OFFSET = 0;
+    /** 信号点大小默认 100%（与出厂一致）。 */
+    public static final int DEF_SIGNAL_DOT_SCALE = 100;
     /**
      * 0 for the ring's extra left offset: the automatic gap is left exactly as
      * it is until the user decides it needs tightening.
@@ -805,12 +807,6 @@ public final class Prefs {
      * 负值往左（远离右缘），正值往右（往右缘贴）。
      */
     public static final int DEF_GLYPH_SHIFT = 0;
-    /** v73：温度读数默认关 —— 什么都不开时状态栏与之前完全一致。 */
-    public static final boolean DEF_PERF_TEMP = false;
-    /** v73：读数整体尺寸默认不缩放（自适应字号就是设计值）。 */
-    public static final int DEF_PERF_SCALE = 100;
-    /** v73：读数字重默认与数字/网络类型同一档，观感一致。 */
-    public static final int DEF_PERF_WEIGHT = 700;
     /** v73：三合一默认吃满系统给的那块区域（= 现状）。 */
     public static final int DEF_GLYPH_SCALE = 100;
     /**
@@ -841,9 +837,11 @@ public final class Prefs {
     public static final int MIN_ARC_STROKE = 3;
     public static final int MAX_ARC_STROKE = 16;
     public static final int MIN_VALUE_SIZE = 16;
-    public static final int MAX_VALUE_SIZE = 44;
+    /** 默认 36 的两倍：数字字号上限放开到 72。 */
+    public static final int MAX_VALUE_SIZE = 72;
     public static final int MIN_VALUE_WEIGHT = 100;
-    public static final int MAX_VALUE_WEIGHT = 900;
+    /** 范围放开到 1200；渲染层对 >1000 的部分按平台上限 1000 处理。 */
+    public static final int MAX_VALUE_WEIGHT = 1200;
     public static final int MIN_TYPE_SIZE = 16;
     public static final int MAX_TYPE_SIZE = 44;
     public static final int MIN_OUT_TYPE_SIZE = 16;
@@ -903,12 +901,14 @@ public final class Prefs {
      */
     public static final int MIN_OUT_SIGNAL_MARGIN = 0;
     public static final int MAX_OUT_SIGNAL_MARGIN = 16;
-    /** v75 温度读数外边距范围：与其它间距项同一套 0–16dp。 */
-    public static final int MIN_PERF_OUTER_MARGIN = 0;
-    public static final int MAX_PERF_OUTER_MARGIN = 16;
-    /** v76 温度读数右侧边距范围：与其它间距项同一套 0–16dp。 */
-    public static final int MIN_PERF_OUTER_MARGIN_RIGHT = 0;
-    public static final int MAX_PERF_OUTER_MARGIN_RIGHT = 16;
+    /** 整组上下间距范围（半 dp）：-16..+16 = -8.0..+8.0dp，与左侧间距同一档。 */
+    public static final int MIN_GLYPH_TOP_OFFSET = -16;
+    public static final int MAX_GLYPH_TOP_OFFSET = 16;
+    public static final int MIN_GLYPH_BOTTOM_OFFSET = -16;
+    public static final int MAX_GLYPH_BOTTOM_OFFSET = 16;
+    /** 信号点大小范围（%）：50 起仍能分辨四点，150 是环内不互相粘连的上限。 */
+    public static final int MIN_SIGNAL_DOT_SCALE = 50;
+    public static final int MAX_SIGNAL_DOT_SCALE = 150;
     /**
      * How far the group may be nudged left. The unit is <b>half a dp</b>, so the
      * stored -16..+16 is the -8.0..+8.0 dp the control shows: the finer step is
@@ -965,15 +965,9 @@ public final class Prefs {
      */
     public static final int MIN_CHARGE_SUFFIX_A_SCALE = 50;
     public static final int MAX_CHARGE_SUFFIX_A_SCALE = 100;
-    /**
-     * v73 读数整体尺寸范围（%）：60–150。
-     * 150 之上单项读数会高过旁边的图标；60 之下在状态栏尺寸上难以卒读。
-     */
-    public static final int MIN_PERF_SCALE = 60;
-    public static final int MAX_PERF_SCALE = 150;
-    /** v73 读数字重范围：与其它字重滑块同一套 100–900。 */
-    public static final int MIN_PERF_WEIGHT = 100;
-    public static final int MAX_PERF_WEIGHT = 900;
+    /** 省电模式默认颜色：与充电绿一致，不再是低电量黄。 */
+    public static final int DEF_COLOR_POWER_SAVE_ON_DARK = DEF_COLOR_CHARGING_ON_DARK;
+    public static final int DEF_COLOR_POWER_SAVE_ON_LIGHT = DEF_COLOR_CHARGING_ON_LIGHT;
     /**
      * v76 三合一整体尺寸范围（%）：60–130。
      * 上限 130 是**实机实测**定的，不是随手取的：130% 对应视图 124px，在 107px 的

@@ -103,6 +103,13 @@ public final class TrioSettings {
     public int lowThreshold;
     /** ★ v77：省电模式是否参与电量着色，默认开（MIUI 语义），见 Prefs#KEY_POWER_SAVE_COLOR。 */
     public boolean powerSaveColor;
+    /** 省电模式染色的深浅背景两色（默认充电绿）。 */
+    public int powerSaveOnDark;
+    public int powerSaveOnLight;
+    /** 自定义信号点颜色开关；关闭时信号点跟随状态栏前景色。 */
+    public boolean dotColorCustom;
+    public int dotOnDark;
+    public int dotOnLight;
     /**
      * ★ v104：充电同显三选项 —— {@link Prefs#CHARGE_PAIR_OFF} /
      * {@link Prefs#CHARGE_PAIR_GAP}（圈上）/ {@link Prefs#CHARGE_PAIR_CENTRE}（圈内）。
@@ -199,16 +206,13 @@ public final class TrioSettings {
      */
     public int glyphShift;
 
-    /** v73：电池温度读数开关。★ v75：功率读数已删，只剩这一项。 */
-    public boolean perfTemp;
-    /** v73：读数整体缩放（%），乘在自适应字号之上。 */
-    public int perfScale;
-    /** v73：读数字重。 */
-    public int perfWeight;
-    /** ★ v75：温度读数与左侧邻居之间的空隙（dp），见 Prefs#KEY_PERF_OUTER_MARGIN。 */
-    public int perfOuterMargin;
-    /** ★ v76：温度读数与右侧三合一之间的空隙（dp），见 Prefs#KEY_PERF_OUTER_MARGIN_RIGHT。 */
-    public int perfOuterMarginRight;
+    /** 整组上间距（半 dp），正值把整组往下推。 */
+    public int glyphTopOffset;
+    /** 整组下间距（半 dp），正值把整组往上推。 */
+    public int glyphBottomOffset;
+    /** 信号点大小（%），100 = 出厂尺寸。 */
+    public int signalDotScale;
+
     /** v73：三合一整体尺寸（%）。 */
     public int glyphScale;
 
@@ -257,6 +261,11 @@ public final class TrioSettings {
         s.lowOnLight = Prefs.DEF_COLOR_LOW_ON_LIGHT;
         s.lowThreshold = Prefs.DEF_LOW_THRESHOLD;
         s.powerSaveColor = Prefs.DEF_POWER_SAVE_COLOR;
+        s.powerSaveOnDark = Prefs.DEF_COLOR_POWER_SAVE_ON_DARK;
+        s.powerSaveOnLight = Prefs.DEF_COLOR_POWER_SAVE_ON_LIGHT;
+        s.dotColorCustom = Prefs.DEF_DOT_COLOR_CUSTOM;
+        s.dotOnDark = Prefs.DEF_COLOR_DOT_ON_DARK;
+        s.dotOnLight = Prefs.DEF_COLOR_DOT_ON_LIGHT;
         s.chargePairMode = Prefs.DEF_CHARGE_PAIR_MODE;
         s.chargeSignalAlso = Prefs.DEF_CHARGE_SIGNAL_ALSO;
         s.chargeValueSize = Prefs.DEF_CHARGE_VALUE_SIZE;
@@ -282,11 +291,9 @@ public final class TrioSettings {
         s.outSignalMargin = Prefs.DEF_OUT_SIGNAL_MARGIN;
         s.glyphLeftOffset = Prefs.DEF_GLYPH_LEFT_OFFSET;
         s.glyphShift = Prefs.DEF_GLYPH_SHIFT;
-        s.perfTemp = Prefs.DEF_PERF_TEMP;
-        s.perfScale = Prefs.DEF_PERF_SCALE;
-        s.perfWeight = Prefs.DEF_PERF_WEIGHT;
-        s.perfOuterMargin = Prefs.DEF_PERF_OUTER_MARGIN;
-        s.perfOuterMarginRight = Prefs.DEF_PERF_OUTER_MARGIN_RIGHT;
+        s.glyphTopOffset = Prefs.DEF_GLYPH_TOP_OFFSET;
+        s.glyphBottomOffset = Prefs.DEF_GLYPH_BOTTOM_OFFSET;
+        s.signalDotScale = Prefs.DEF_SIGNAL_DOT_SCALE;
         s.glyphScale = Prefs.DEF_GLYPH_SCALE;
         s.burnInProtect = Prefs.DEF_BURN_IN_PROTECT;
         s.burnInAmplitude = Prefs.DEF_BURN_IN_AMPLITUDE;
@@ -354,6 +361,11 @@ public final class TrioSettings {
                 p.getInt(Prefs.KEY_LOW_THRESHOLD, Prefs.DEF_LOW_THRESHOLD),
                 Prefs.MIN_LOW_THRESHOLD, Prefs.MAX_LOW_THRESHOLD);
         s.powerSaveColor = p.getBoolean(Prefs.KEY_POWER_SAVE_COLOR, Prefs.DEF_POWER_SAVE_COLOR);
+        s.powerSaveOnDark = p.getInt(Prefs.KEY_COLOR_POWER_SAVE_ON_DARK, Prefs.DEF_COLOR_POWER_SAVE_ON_DARK);
+        s.powerSaveOnLight = p.getInt(Prefs.KEY_COLOR_POWER_SAVE_ON_LIGHT, Prefs.DEF_COLOR_POWER_SAVE_ON_LIGHT);
+        s.dotColorCustom = p.getBoolean(Prefs.KEY_DOT_COLOR_CUSTOM, Prefs.DEF_DOT_COLOR_CUSTOM);
+        s.dotOnDark = p.getInt(Prefs.KEY_COLOR_DOT_ON_DARK, Prefs.DEF_COLOR_DOT_ON_DARK);
+        s.dotOnLight = p.getInt(Prefs.KEY_COLOR_DOT_ON_LIGHT, Prefs.DEF_COLOR_DOT_ON_LIGHT);
         s.chargePairMode = readPairMode(p, Prefs.capKeyAware(Prefs.KEY_CHARGE_PAIR_MODE, capsule),
                 Prefs.KEY_CHARGE_WITH_VALUE, true);
         s.chargeSignalAlso = p.getBoolean(
@@ -422,19 +434,15 @@ public final class TrioSettings {
         s.glyphShift = Prefs.clamp(
                 p.getInt(Prefs.capKeyAware(Prefs.KEY_GLYPH_SHIFT, capsule), Prefs.DEF_GLYPH_SHIFT),
                 Prefs.MIN_GLYPH_SHIFT, Prefs.MAX_GLYPH_SHIFT);
-        s.perfTemp = p.getBoolean(Prefs.capKeyAware(Prefs.KEY_PERF_TEMP, capsule), Prefs.DEF_PERF_TEMP);
-        s.perfOuterMargin = Prefs.clamp(
-                p.getInt(Prefs.capKeyAware(Prefs.KEY_PERF_OUTER_MARGIN, capsule), Prefs.DEF_PERF_OUTER_MARGIN),
-                Prefs.MIN_PERF_OUTER_MARGIN, Prefs.MAX_PERF_OUTER_MARGIN);
-        s.perfOuterMarginRight = Prefs.clamp(
-                p.getInt(Prefs.capKeyAware(Prefs.KEY_PERF_OUTER_MARGIN_RIGHT, capsule), Prefs.DEF_PERF_OUTER_MARGIN_RIGHT),
-                Prefs.MIN_PERF_OUTER_MARGIN_RIGHT, Prefs.MAX_PERF_OUTER_MARGIN_RIGHT);
-        s.perfScale = Prefs.clamp(
-                p.getInt(Prefs.capKeyAware(Prefs.KEY_PERF_SCALE, capsule), Prefs.DEF_PERF_SCALE),
-                Prefs.MIN_PERF_SCALE, Prefs.MAX_PERF_SCALE);
-        s.perfWeight = Prefs.clamp(
-                p.getInt(Prefs.capKeyAware(Prefs.KEY_PERF_WEIGHT, capsule), Prefs.DEF_PERF_WEIGHT),
-                Prefs.MIN_PERF_WEIGHT, Prefs.MAX_PERF_WEIGHT);
+        s.glyphTopOffset = Prefs.clamp(
+                p.getInt(Prefs.capKeyAware(Prefs.KEY_GLYPH_TOP_OFFSET, capsule), Prefs.DEF_GLYPH_TOP_OFFSET),
+                Prefs.MIN_GLYPH_TOP_OFFSET, Prefs.MAX_GLYPH_TOP_OFFSET);
+        s.glyphBottomOffset = Prefs.clamp(
+                p.getInt(Prefs.capKeyAware(Prefs.KEY_GLYPH_BOTTOM_OFFSET, capsule), Prefs.DEF_GLYPH_BOTTOM_OFFSET),
+                Prefs.MIN_GLYPH_BOTTOM_OFFSET, Prefs.MAX_GLYPH_BOTTOM_OFFSET);
+        s.signalDotScale = Prefs.clamp(
+                p.getInt(Prefs.capKeyAware(Prefs.KEY_SIGNAL_DOT_SCALE, capsule), Prefs.DEF_SIGNAL_DOT_SCALE),
+                Prefs.MIN_SIGNAL_DOT_SCALE, Prefs.MAX_SIGNAL_DOT_SCALE);
         // ★ v80：>100% 那一档由「独立窗口绘制」看着（见 Prefs.MAX_GLYPH_SCALE_TREE）。
         //   关着独立窗口 = 三合一挂在状态栏那一行里参与排布，放大只能放开
         //   clipChildren，而 clipChildren 对 Android 窗口边界无效 → 只能到 100%。
@@ -594,11 +602,14 @@ public final class TrioSettings {
         s.outSignalMargin = outSignalMargin;
         s.glyphLeftOffset = glyphLeftOffset;
         s.glyphShift = glyphShift;
-        s.perfTemp = perfTemp;
-        s.perfScale = perfScale;
-        s.perfWeight = perfWeight;
-        s.perfOuterMargin = perfOuterMargin;
-        s.perfOuterMarginRight = perfOuterMarginRight;
+        s.glyphTopOffset = glyphTopOffset;
+        s.glyphBottomOffset = glyphBottomOffset;
+        s.signalDotScale = signalDotScale;
+        s.powerSaveOnDark = powerSaveOnDark;
+        s.powerSaveOnLight = powerSaveOnLight;
+        s.dotColorCustom = dotColorCustom;
+        s.dotOnDark = dotOnDark;
+        s.dotOnLight = dotOnLight;
         s.glyphScale = glyphScale;
         s.burnInProtect = burnInProtect;
         s.burnInAmplitude = burnInAmplitude;
@@ -675,11 +686,14 @@ public final class TrioSettings {
             case Prefs.KEY_OUT_SIGNAL_MARGIN: outSignalMargin = src.outSignalMargin; return true;
             case Prefs.KEY_GLYPH_LEFT_OFFSET: glyphLeftOffset = src.glyphLeftOffset; return true;
             case Prefs.KEY_GLYPH_SHIFT: glyphShift = src.glyphShift; return true;
-            case Prefs.KEY_PERF_TEMP: perfTemp = src.perfTemp; return true;
-            case Prefs.KEY_PERF_OUTER_MARGIN: perfOuterMargin = src.perfOuterMargin; return true;
-            case Prefs.KEY_PERF_OUTER_MARGIN_RIGHT: perfOuterMarginRight = src.perfOuterMarginRight; return true;
-            case Prefs.KEY_PERF_SCALE: perfScale = src.perfScale; return true;
-            case Prefs.KEY_PERF_WEIGHT: perfWeight = src.perfWeight; return true;
+            case Prefs.KEY_GLYPH_TOP_OFFSET: glyphTopOffset = src.glyphTopOffset; return true;
+            case Prefs.KEY_GLYPH_BOTTOM_OFFSET: glyphBottomOffset = src.glyphBottomOffset; return true;
+            case Prefs.KEY_SIGNAL_DOT_SCALE: signalDotScale = src.signalDotScale; return true;
+            case Prefs.KEY_DOT_COLOR_CUSTOM: dotColorCustom = src.dotColorCustom; return true;
+            case Prefs.KEY_COLOR_DOT_ON_DARK: dotOnDark = src.dotOnDark; return true;
+            case Prefs.KEY_COLOR_DOT_ON_LIGHT: dotOnLight = src.dotOnLight; return true;
+            case Prefs.KEY_COLOR_POWER_SAVE_ON_DARK: powerSaveOnDark = src.powerSaveOnDark; return true;
+            case Prefs.KEY_COLOR_POWER_SAVE_ON_LIGHT: powerSaveOnLight = src.powerSaveOnLight; return true;
             case Prefs.KEY_GLYPH_SCALE: glyphScale = src.glyphScale; return true;
             case Prefs.KEY_BURN_IN_PROTECT: burnInProtect = src.burnInProtect; return true;
             case Prefs.KEY_BURN_IN_AMPLITUDE: burnInAmplitude = src.burnInAmplitude; return true;
@@ -737,6 +751,11 @@ public final class TrioSettings {
                 bundle.getInt(Prefs.KEY_LOW_THRESHOLD, Prefs.DEF_LOW_THRESHOLD),
                 Prefs.MIN_LOW_THRESHOLD, Prefs.MAX_LOW_THRESHOLD);
         s.powerSaveColor = bundle.getBoolean(Prefs.KEY_POWER_SAVE_COLOR, Prefs.DEF_POWER_SAVE_COLOR);
+        s.powerSaveOnDark = bundle.getInt(Prefs.KEY_COLOR_POWER_SAVE_ON_DARK, Prefs.DEF_COLOR_POWER_SAVE_ON_DARK);
+        s.powerSaveOnLight = bundle.getInt(Prefs.KEY_COLOR_POWER_SAVE_ON_LIGHT, Prefs.DEF_COLOR_POWER_SAVE_ON_LIGHT);
+        s.dotColorCustom = bundle.getBoolean(Prefs.KEY_DOT_COLOR_CUSTOM, Prefs.DEF_DOT_COLOR_CUSTOM);
+        s.dotOnDark = bundle.getInt(Prefs.KEY_COLOR_DOT_ON_DARK, Prefs.DEF_COLOR_DOT_ON_DARK);
+        s.dotOnLight = bundle.getInt(Prefs.KEY_COLOR_DOT_ON_LIGHT, Prefs.DEF_COLOR_DOT_ON_LIGHT);
         s.chargePairMode = readPairMode(bundle, Prefs.capKeyAware(Prefs.KEY_CHARGE_PAIR_MODE, capsule),
                 Prefs.KEY_CHARGE_WITH_VALUE, true);
         s.chargeSignalAlso = bundle.getBoolean(
@@ -806,19 +825,15 @@ public final class TrioSettings {
         s.glyphShift = Prefs.clamp(
                 bundle.getInt(Prefs.capKeyAware(Prefs.KEY_GLYPH_SHIFT, capsule), Prefs.DEF_GLYPH_SHIFT),
                 Prefs.MIN_GLYPH_SHIFT, Prefs.MAX_GLYPH_SHIFT);
-        s.perfTemp = bundle.getBoolean(Prefs.capKeyAware(Prefs.KEY_PERF_TEMP, capsule), Prefs.DEF_PERF_TEMP);
-        s.perfOuterMargin = Prefs.clamp(
-                bundle.getInt(Prefs.capKeyAware(Prefs.KEY_PERF_OUTER_MARGIN, capsule), Prefs.DEF_PERF_OUTER_MARGIN),
-                Prefs.MIN_PERF_OUTER_MARGIN, Prefs.MAX_PERF_OUTER_MARGIN);
-        s.perfOuterMarginRight = Prefs.clamp(
-                bundle.getInt(Prefs.capKeyAware(Prefs.KEY_PERF_OUTER_MARGIN_RIGHT, capsule), Prefs.DEF_PERF_OUTER_MARGIN_RIGHT),
-                Prefs.MIN_PERF_OUTER_MARGIN_RIGHT, Prefs.MAX_PERF_OUTER_MARGIN_RIGHT);
-        s.perfScale = Prefs.clamp(
-                bundle.getInt(Prefs.capKeyAware(Prefs.KEY_PERF_SCALE, capsule), Prefs.DEF_PERF_SCALE),
-                Prefs.MIN_PERF_SCALE, Prefs.MAX_PERF_SCALE);
-        s.perfWeight = Prefs.clamp(
-                bundle.getInt(Prefs.capKeyAware(Prefs.KEY_PERF_WEIGHT, capsule), Prefs.DEF_PERF_WEIGHT),
-                Prefs.MIN_PERF_WEIGHT, Prefs.MAX_PERF_WEIGHT);
+        s.glyphTopOffset = Prefs.clamp(
+                bundle.getInt(Prefs.capKeyAware(Prefs.KEY_GLYPH_TOP_OFFSET, capsule), Prefs.DEF_GLYPH_TOP_OFFSET),
+                Prefs.MIN_GLYPH_TOP_OFFSET, Prefs.MAX_GLYPH_TOP_OFFSET);
+        s.glyphBottomOffset = Prefs.clamp(
+                bundle.getInt(Prefs.capKeyAware(Prefs.KEY_GLYPH_BOTTOM_OFFSET, capsule), Prefs.DEF_GLYPH_BOTTOM_OFFSET),
+                Prefs.MIN_GLYPH_BOTTOM_OFFSET, Prefs.MAX_GLYPH_BOTTOM_OFFSET);
+        s.signalDotScale = Prefs.clamp(
+                bundle.getInt(Prefs.capKeyAware(Prefs.KEY_SIGNAL_DOT_SCALE, capsule), Prefs.DEF_SIGNAL_DOT_SCALE),
+                Prefs.MIN_SIGNAL_DOT_SCALE, Prefs.MAX_SIGNAL_DOT_SCALE);
         // ★ v80：同 from(SharedPreferences) —— 广播这条路也要把「独立窗口绘制」
         //   关着时的 130% 压回 100%，否则 SystemUI 侧与设置页看到的值会不一致。
         final int bundleScaleCap = s.overlayGlyph
@@ -958,11 +973,14 @@ public final class TrioSettings {
         b.putInt(Prefs.capKeyAware(Prefs.KEY_OUT_SIGNAL_MARGIN, capsule), outSignalMargin);
         b.putInt(Prefs.capKeyAware(Prefs.KEY_GLYPH_LEFT_OFFSET, capsule), glyphLeftOffset);
         b.putInt(Prefs.capKeyAware(Prefs.KEY_GLYPH_SHIFT, capsule), glyphShift);
-        b.putBoolean(Prefs.capKeyAware(Prefs.KEY_PERF_TEMP, capsule), perfTemp);
-        b.putInt(Prefs.capKeyAware(Prefs.KEY_PERF_OUTER_MARGIN, capsule), perfOuterMargin);
-        b.putInt(Prefs.capKeyAware(Prefs.KEY_PERF_OUTER_MARGIN_RIGHT, capsule), perfOuterMarginRight);
-        b.putInt(Prefs.capKeyAware(Prefs.KEY_PERF_SCALE, capsule), perfScale);
-        b.putInt(Prefs.capKeyAware(Prefs.KEY_PERF_WEIGHT, capsule), perfWeight);
+        b.putInt(Prefs.capKeyAware(Prefs.KEY_GLYPH_TOP_OFFSET, capsule), glyphTopOffset);
+        b.putInt(Prefs.capKeyAware(Prefs.KEY_GLYPH_BOTTOM_OFFSET, capsule), glyphBottomOffset);
+        b.putInt(Prefs.capKeyAware(Prefs.KEY_SIGNAL_DOT_SCALE, capsule), signalDotScale);
+        b.putBoolean(Prefs.KEY_DOT_COLOR_CUSTOM, dotColorCustom);
+        b.putInt(Prefs.KEY_COLOR_DOT_ON_DARK, dotOnDark);
+        b.putInt(Prefs.KEY_COLOR_DOT_ON_LIGHT, dotOnLight);
+        b.putInt(Prefs.KEY_COLOR_POWER_SAVE_ON_DARK, powerSaveOnDark);
+        b.putInt(Prefs.KEY_COLOR_POWER_SAVE_ON_LIGHT, powerSaveOnLight);
         b.putInt(Prefs.capKeyAware(Prefs.KEY_GLYPH_SCALE, capsule), glyphScale);
         b.putBoolean(Prefs.KEY_BURN_IN_PROTECT, burnInProtect);
         b.putInt(Prefs.KEY_BURN_IN_AMPLITUDE, burnInAmplitude);
@@ -1044,11 +1062,14 @@ public final class TrioSettings {
                 && outSignalMargin == s.outSignalMargin
                 && glyphLeftOffset == s.glyphLeftOffset
                 && glyphShift == s.glyphShift
-                && perfTemp == s.perfTemp
-                && perfOuterMargin == s.perfOuterMargin
-                && perfOuterMarginRight == s.perfOuterMarginRight
-                && perfScale == s.perfScale
-                && perfWeight == s.perfWeight
+                && glyphTopOffset == s.glyphTopOffset
+                && glyphBottomOffset == s.glyphBottomOffset
+                && signalDotScale == s.signalDotScale
+                && dotColorCustom == s.dotColorCustom
+                && dotOnDark == s.dotOnDark
+                && dotOnLight == s.dotOnLight
+                && powerSaveOnDark == s.powerSaveOnDark
+                && powerSaveOnLight == s.powerSaveOnLight
                 && glyphScale == s.glyphScale
                 && burnInProtect == s.burnInProtect
                 && burnInAmplitude == s.burnInAmplitude

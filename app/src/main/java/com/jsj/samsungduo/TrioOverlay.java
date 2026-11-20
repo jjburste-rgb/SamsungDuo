@@ -292,9 +292,6 @@ public final class TrioOverlay {
                         if (inst.sideType != null) {
                             inst.sideType.invalidate();
                         }
-                        if (inst.sidePerf != null) {
-                            inst.sidePerf.invalidate();
-                        }
                     }
                 }
             });
@@ -306,8 +303,6 @@ public final class TrioOverlay {
     /** 陪衬的种类：环外信号读数 / 环外网络类型标签。 */
     private static final int SIDE_SIGNAL = 0;
     private static final int SIDE_TYPE = 1;
-    /** ★ v73：充电功率 / 电池温度读数（两块内容共用一块 View，各占一行）。 */
-    private static final int SIDE_PERF = 2;
 
     static {
         // ★ v59：设置一变就重新核对"陪衬是否该存在"。
@@ -379,8 +374,6 @@ public final class TrioOverlay {
      */
     private SideView sideSignal;
     private SideView sideType;
-    /** ★ v73：充电功率 / 电池温度读数，紧贴三合一左侧（外侧由最左块规则承担）。 */
-    private SideView sidePerf;
     /**
      * ★ v76：挂载时实际用的「整体尺寸」与所在行高 —— 提前返回的判定要用。
      *
@@ -737,12 +730,8 @@ public final class TrioOverlay {
             final boolean wantSignal = app.glyph && app.mobile && app.signalOutOfRing;
             // 类型标签同理：关闭（OFF）＝隐藏，环内＝画进环里，环外＝这块独立 View。
             final boolean wantType = app.typeOutOfRing && app.glyph;
-            // ★ v73：功率/温度读数。只是"想要"——有没有内容要等取数器答话
-            //   （见 TrioRenderer.perfText），两块都没内容时这块宽度为 0、不占位。
-            final boolean wantPerf = app.perfAnywhere() && app.glyph;
             final boolean haveSignal = sideSignal != null && sideSignal.getParent() == parent;
             final boolean haveType = sideType != null && sideType.getParent() == parent;
-            final boolean havePerf = sidePerf != null && sidePerf.getParent() == parent;
             // ★ v76 修正：「整体尺寸」(glyphScale) 之前**不在**这个提前返回的判定
             //   里，而视图边长只在挂载时算一次 → 用户拖「整体尺寸」滑块时，这里
             //   直接 return true，尺寸永远停在旧值（实测 100–120% 完全没效果）。
@@ -902,7 +891,7 @@ public final class TrioOverlay {
             // ★ v59：三合一左边只要站了陪衬（环外读数/类型标签/功率温度读数），
             //   边距就交给陪衬自己带，三合一不再另加这份边距 ——
             //   否则两段边距叠加，设置里承诺的"读数与电池之间的空隙"就不准了。
-            final boolean hasSide = wantSignal || wantType || wantPerf;
+            final boolean hasSide = wantSignal || wantType;
             LayoutParams lp = cloneExistingLayoutParams(parent);
             if (lp == null) {
                 lp = createLayoutParamsFor(parent);
@@ -955,7 +944,7 @@ public final class TrioOverlay {
             //   原地改 LayoutParams 不触发任何显隐回调，也没有重排风暴。
             final boolean sameParent = glyph.getParent() == parent;
             final boolean sameSides = haveSignal == wantSignal
-                    && haveType == wantType && havePerf == wantPerf;
+                    && haveType == wantType;
             if (sameParent && sameSides) {
                 final int rowHNow = heightBase > 0 ? heightBase : 0;
                 boolean changed = applyGlyphLp(w, h, hasSide ? 0 : gap);
@@ -973,12 +962,6 @@ public final class TrioOverlay {
                             TrioRenderer.outTypeWidth(state.mobileType, density, app), typeH,
                             (int) (cfg.outTypeMarginLeft * density),
                             (int) (cfg.outTypeMarginRight * density));
-                }
-                if (wantPerf && sidePerf != null) {
-                    final float perfBase = TrioRenderer.outTypePx(app.outTypeSize, density);
-                    changed |= applySideLp(sidePerf,
-                            TrioRenderer.perfWidth("99\u00B0C", perfBase, app),
-                            TrioRenderer.perfHeight("99\u00B0C", perfBase, app), 0, 0);
                 }
                 attachedGlyphScale = cfg.glyphScale;
                 attachedEffScale = effectiveGlyphScale();
@@ -998,9 +981,6 @@ public final class TrioOverlay {
                     }
                     if (sideType != null) {
                         sideType.invalidate();
-                    }
-                    if (sidePerf != null) {
-                        sidePerf.invalidate();
                     }
                 }
                 return true;
@@ -1049,21 +1029,6 @@ public final class TrioOverlay {
             //   这里直接用 index 说话（writeGroupMargins 也是按 index 找最左块）。
             //   它外侧不另设设置项 —— 当它是整组最左端时，自动基准
             //   （电池邻居 2dp / 否则 0 + 用户微调）由 writeGroupMargins 给它。
-            if (wantPerf) {
-                sidePerf = new SideView(statusBarRoot.getContext(), SIDE_PERF);
-                // 初始尺寸取"最宽形式"（温度 99°C，3 字符），之后每帧由 onDraw
-                // 里的 perfWidth/perfHeight 现算校正 —— 位数变化才动布局。
-                // ★ v74 修复：高度也必须一开始就按最宽形式给足（v73 硬编码 0
-                //   → 视图 0 高度 → onDraw 不跑 → ensureBox 自愈到不了 →
-                //   永久 137x0 不可见）。
-                // ★ v75：功率读数删除，只剩温度；数据走 TrioState 既有电池
-                //   广播链路（readBattery → readTemperature），不需要取数器。
-                final float perfBase = TrioRenderer.outTypePx(app.outTypeSize, density);
-                addSideView(parent, sidePerf,
-                        TrioRenderer.perfWidth("99\u00B0C", perfBase, app),
-                        TrioRenderer.perfHeight("99\u00B0C", perfBase, app),
-                        0, 0);
-            }
             parent.addView(glyph, lp);
             glyph.requestLayout();
             // ★ v76：记下这次挂载用的尺寸与行高，供下次"要不要重挂"的判定。
@@ -1098,8 +1063,7 @@ public final class TrioOverlay {
                     + " remountMs=" + (android.os.SystemClock.uptimeMillis() - remountT0)
                     // ★ v59：环外陪衬的实际尺寸，一眼能核对"挂上了没、多大"
                     + " sideSignal=" + sideInfo(sideSignal)
-                    + " sideType=" + sideInfo(sideType)
-                    + " sidePerf=" + sideInfo(sidePerf));
+                    + " sideType=" + sideInfo(sideType));
             // ★ v65：把所在行的每个子 View 几何打出来。纯只读。
             //   起因：用户反馈"和原生信号图标之间还有间距、缩小边距没变化"。
             //   想减少间距必须先知道那 12dp 到底是谁占的（我们的 margin？原生图标
@@ -1130,13 +1094,8 @@ public final class TrioOverlay {
         removeFromParent(glyph);
         removeFromParent(sideSignal);
         removeFromParent(sideType);
-        removeFromParent(sidePerf);
         sideSignal = null;
         sideType = null;
-        // ★ v78：sidePerf 之前漏了置空 —— 关掉温度后重挂时它仍是上一次那个
-        //   （已摘除、parent 为 null），而 computeSideBoxH 只看 "!= null"，
-        //   于是统一盒高会被一块根本不存在的陪衬顶高 → 5G/温度底边对不齐。
-        sidePerf = null;
     }
 
     /**
@@ -1312,7 +1271,7 @@ public final class TrioOverlay {
                 if (c == null || c.getWidth() <= 0) {
                     continue;               // 宽度 0 = 被隐藏，等于不占位
                 }
-                if (c == glyph || c == sideSignal || c == sideType || c == sidePerf) {
+                if (c == glyph || c == sideSignal || c == sideType) {
                     continue;               // 我们自己的三块，跳过（重挂前可能还在树上）
                 }
                 return needsGapBefore(c) ? (int) (2f * density) : 0;
@@ -1487,11 +1446,13 @@ public final class TrioOverlay {
             //   两条路共用一个量（margin 那条见 groupOffsetPx），所以这里必须
             //   先取基准再叠加游走，否则平移会被下一次防烧屏写入整个覆盖掉。
             final float base = shiftBaseFor(v);
+            final float baseY = verticalBaseFor(v);
             if (!cfg.burnInProtect || cfg.burnInAmplitude <= 0) {
                 if (last[0] != 0f || last[1] != 0f
-                        || Math.abs(v.getTranslationX() - base) >= 0.05f) {
+                        || Math.abs(v.getTranslationX() - base) >= 0.05f
+                        || Math.abs(v.getTranslationY() - baseY) >= 0.05f) {
                     v.setTranslationX(base);
-                    v.setTranslationY(0f);
+                    v.setTranslationY(baseY);
                     last[0] = 0f;
                     last[1] = 0f;
                 }
@@ -1503,12 +1464,13 @@ public final class TrioOverlay {
                     cfg.burnInPeriodSec, tmp);
             if (Math.abs(tmp[0] - last[0]) >= 0.05f || Math.abs(tmp[1] - last[1]) >= 0.05f) {
                 v.setTranslationX(base + tmp[0]);
-                v.setTranslationY(tmp[1]);
+                v.setTranslationY(baseY + tmp[1]);
                 last[0] = tmp[0];
                 last[1] = tmp[1];
             } else if (Math.abs(v.getTranslationX() - (base + last[0])) >= 0.05f) {
                 // 防烧屏没动但平移量变了（用户刚拖了滑块）→ 只补基准
                 v.setTranslationX(base + last[0]);
+                v.setTranslationY(baseY + last[1]);
             }
         } catch (Throwable ignored) {
             // 防烧屏是锦上添花，任何异常都不许影响绘制
@@ -1528,6 +1490,21 @@ public final class TrioOverlay {
             return 0f;
         }
         return glyphShiftPxF(v);
+    }
+
+    /**
+     * 整组上下间距的像素基准。
+     *
+     * <p>存储是半 dp：上间距把整组往下推、下间距把整组往上推，两者相等时
+     * 保持居中。只有挂树模式生效（窗口模式平移会被窗口 Surface 裁掉）。
+     */
+    private float verticalBaseFor(View v) {
+        if (!treeAttached || v == null) {
+            return 0f;
+        }
+        final TrioSettings cfg = TrioConfig.get();
+        final float density = v.getResources().getDisplayMetrics().density;
+        return (cfg.glyphTopOffset - cfg.glyphBottomOffset) * 0.5f * density;
     }
 
     /** ★ v82：平移基准（像素）。防烧屏关掉时循环会停（v74 省电），所以每条绘制路径都要自己能补上。
@@ -1556,15 +1533,12 @@ public final class TrioOverlay {
                 return;
             }
             final float base = shiftBaseFor(glyph);
-            applyShift(glyph, glyph.burnLast, base);
+            applyShift(glyph, glyph.burnLast, base, verticalBaseFor(glyph));
             if (sideSignal != null) {
-                applyShift(sideSignal, sideSignal.burnLast, base);
+                applyShift(sideSignal, sideSignal.burnLast, base, verticalBaseFor(sideSignal));
             }
             if (sideType != null) {
-                applyShift(sideType, sideType.burnLast, base);
-            }
-            if (sidePerf != null) {
-                applyShift(sidePerf, sidePerf.burnLast, base);
+                applyShift(sideType, sideType.burnLast, base, verticalBaseFor(sideType));
             }
         } catch (Throwable ignored) {
             // 平移是锦上添花，绝不影响绘制
@@ -1572,15 +1546,15 @@ public final class TrioOverlay {
     }
 
     /** ★ v82：单块 View 的平移 = 基准 + 防烧屏游走值（last 里存的是纯游走值）。 */
-    private static void applyShift(View v, float[] burnLast, float base) {
+    private static void applyShift(View v, float[] burnLast, float base, float baseY) {
         try {
             final float burnX = (burnLast == null) ? 0f : burnLast[0];
             final float burnY = (burnLast == null) ? 0f : burnLast[1];
             if (Math.abs(v.getTranslationX() - (base + burnX)) >= 0.05f) {
                 v.setTranslationX(base + burnX);
             }
-            if (Math.abs(v.getTranslationY() - burnY) >= 0.05f) {
-                v.setTranslationY(burnY);
+            if (Math.abs(v.getTranslationY() - (baseY + burnY)) >= 0.05f) {
+                v.setTranslationY(baseY + burnY);
             }
         } catch (Throwable ignored) {
             // ignore
@@ -1670,16 +1644,6 @@ public final class TrioOverlay {
         if (sideType != null) {
             need = Math.max(need,
                     clampToRow(TrioRenderer.outTypeHeight(density, app), rowH));
-        }
-        if (sidePerf != null) {
-            final String txt = TrioRenderer.perfText(cfg.perfTemp, TrioState.sBatteryTempC);
-            if (!txt.isEmpty()) {
-                final float base = TrioRenderer.outTypePx(app.outTypeSize, density);
-                final int gw = (glyph == null) ? 0 : glyph.getWidth();
-                final int gh = (glyph == null) ? 0 : glyph.getHeight();
-                final float sz = TrioRenderer.perfTextSize(txt, gw, gh, base, app);
-                need = Math.max(need, TrioRenderer.perfHeight(txt, sz, app));
-            }
         }
         return need;
     }
@@ -2600,9 +2564,6 @@ public final class TrioOverlay {
         int lastOuterPx = Integer.MIN_VALUE;
         /** ★ v75：内侧（右）边距的上次写入值，与 {@link #lastOuterPx} 同理。 */
         int lastRightPx = Integer.MIN_VALUE;
-        /** ★ v75 诊断：温度读数链路的去重状态（值变才打日志）。 */
-        boolean perfDiagLogged;
-        String perfDiagText;
         /** ★ v72 防烧屏：上一次写进本 View 的微位移（x, y），单位 px。 */
         final float[] burnLast = {0f, 0f};
 
@@ -2664,52 +2625,6 @@ public final class TrioOverlay {
                     if (getWidth() > 0 && getHeight() > 0) {
                         TrioRenderer.drawOutSignal(canvas, getWidth(), getHeight(),
                                 out[0], out[1], state.foreground(), app);
-                    }
-                } else if (kind == SIDE_PERF) {
-                    // ★ v75：电池温度（充电功率读数已删）。没内容时宽度 0（不占位）。
-                    //   数据是静态量（TrioState.readBattery 写），不走 state.refresh()。
-                    final String text = TrioRenderer.perfText(
-                            cfg.perfTemp, TrioState.sBatteryTempC);
-                    // ★ v75 诊断：用户报"读数不显示"时，旧日志里没有任何 perf
-                    //   数据行，无从判断是开关没开、平台没给温度、还是渲染没跑。
-                    //   现在把三样一次打齐（值变才打，不刷屏）：
-                    //   tempC=-2147483648 就是平台从没给过 EXTRA_TEMPERATURE。
-                    if (text.isEmpty()) {
-                        if (!perfDiagLogged || perfDiagText != null) {
-                            perfDiagLogged = true;
-                            perfDiagText = null;
-                            TrioHooks.log(TrioHooks.LOG_WARN, "perf: EMPTY text"
-                                    + " perfTemp=" + cfg.perfTemp
-                                    + " tempC=" + TrioState.sBatteryTempC
-                                    + " (TEMP_UNKNOWN=" + TrioState.TEMP_UNKNOWN
-                                    + " => platform never gave EXTRA_TEMPERATURE)");
-                        }
-                        ensureBox(0, 0);
-                        return;
-                    }
-                    if (!perfDiagLogged || !text.equals(perfDiagText)) {
-                        perfDiagLogged = true;
-                        perfDiagText = text;
-                        TrioHooks.log(TrioHooks.LOG_INFO, "perf: text=" + text
-                                + " perfTemp=" + cfg.perfTemp
-                                + " tempC=" + TrioState.sBatteryTempC
-                                + " box=" + getWidth() + "x" + getHeight());
-                    }
-                    // 基准字号 = 环外类型字号；两项都开时按图标高度自适应缩小。
-                    final float base = TrioRenderer.outTypePx(app.outTypeSize, density);
-                    final int glyphW = (glyph == null) ? 0 : glyph.getWidth();
-                    final int glyphH = (glyph == null) ? 0 : glyph.getHeight();
-                    final float size = TrioRenderer.perfTextSize(
-                            text, glyphW, glyphH, base, app);
-                    // ★ 防横移：占位宽度按"最宽形式"算，不按当前文本 ——
-                    //   否则功率每秒变一次，整排原生图标跟着每秒横移一次。
-                    final int boxH = computeSideBoxH();
-                    ensureBox(TrioRenderer.perfWidth(text, size, app), boxH);
-                    if (getWidth() > 0 && getHeight() > 0) {
-                        // ★ v76：文字底边对齐信号条底边（信号条不动，只挪读数）。
-                        TrioRenderer.drawPerf(canvas, getWidth(), getHeight(),
-                                text, size, state.foreground(), app,
-                                computeSideBaseline(boxH));
                     }
                 } else {
                     // ★ v76：盒高统一；文字底边对齐信号条底边（信号条不动）。
@@ -2894,9 +2809,6 @@ public final class TrioOverlay {
                     if (sideType != null) {
                         applyBurnIn(sideType, burnTmp, sideType.burnLast);
                     }
-                    if (sidePerf != null) {
-                        applyBurnIn(sidePerf, burnTmp, sidePerf.burnLast);
-                    }
                     mLooping = false;
                     return;
                 }
@@ -2919,18 +2831,12 @@ public final class TrioOverlay {
                     if (sideType != null) {
                         applyBurnIn(sideType, burnTmp, sideType.burnLast);
                     }
-                    if (sidePerf != null) {
-                        applyBurnIn(sidePerf, burnTmp, sidePerf.burnLast);
-                    }
                     invalidate();
                     if (sideSignal != null) {
                         sideSignal.invalidate();
                     }
                     if (sideType != null) {
                         sideType.invalidate();
-                    }
-                    if (sidePerf != null) {
-                        sidePerf.invalidate();
                     }
                 } catch (Throwable ignored) {
                     // 重绘循环绝不能抛异常
@@ -2992,7 +2898,7 @@ public final class TrioOverlay {
             if (minIdx < 0) {
                 return;                   // 三合一自己都不在树上，无从谈起
             }
-            for (SideView s : new SideView[]{sideSignal, sideType, sidePerf}) {
+            for (SideView s : new SideView[]{sideSignal, sideType}) {
                 if (s == null || s.getParent() != p) {
                     continue;
                 }
@@ -3020,11 +2926,10 @@ public final class TrioOverlay {
             //   v69~v74 用快照的后果：用户改设置后，已挂载的陪衬左侧永远按旧值
             //   写、右侧干脆没人写 —— 用户实测"间距/边距调不动"。
             //
-            //   规则（左→右布局 [signal, type, perf, 三合一]）：
+            //   规则（左→右布局 [signal, type, 三合一]）：
             //   · 每块 leftMargin = 自己的外边距设置（最左那块再加整组 offset）
             //   · 每块 rightMargin = 自己的内边距设置，但**左侧邻居在场时归 0**
             //     —— 块间空隙只由"右侧块的 leftMargin"承担，否则两道边距叠加
-            //   · perf 是 v75 新增的设置项（默认 2dp），语义与「环外信号间距」同款
             final TrioSettings cfg = TrioConfig.get();
             if (sideSignal != null && sideSignal.getParent() == p) {
                 final int l = (int) (cfg.outSignalMargin * density)
@@ -3041,19 +2946,6 @@ public final class TrioOverlay {
                 //   空隙，温度的左边距让位为 0（仍然不双重计算）。
                 final int r = (int) (cfg.outTypeMarginRight * density);
                 writeSideMargins(sideType, l, r, force);
-            }
-            if (sidePerf != null && sidePerf.getParent() == p) {
-                // ★ v76：左侧是类型标签时，这段空隙已由 type.right 独自承担，
-                //   本块左边距让位为 0；类型标签关闭时才用自己这份外边距。
-                final boolean typeOnLeft = (sideType != null && sideType.getParent() == p);
-                final int l = typeOnLeft ? 0
-                        : ((int) (cfg.perfOuterMargin * density)
-                                + ((sidePerf == leftmost) ? offset : 0));
-                // ★ v76：右侧边距也接上（v75 时 perf.right 恒 0 → 温度贴着三合一）。
-                //   glyph 在 perf 右侧时自身 left 归 0，这块空隙只由 perf.right 承担，
-                //   与"块间空隙由右侧块的 left 承担"规则不冲突、不双重计算。
-                writeSideMargins(sidePerf, l,
-                        (int) (cfg.perfOuterMarginRight * density), force);
             }
         }
 

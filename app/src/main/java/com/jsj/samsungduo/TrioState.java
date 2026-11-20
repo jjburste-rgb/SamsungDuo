@@ -124,21 +124,6 @@ final class TrioState {
     static volatile boolean sBatteryPowerSave = false;
     static volatile boolean sBatteryPerf = false;
 
-    // ------------------------------------------------- 电池温度（v73，v75 只剩温度）
-    /**
-     * 电池温度取不到时的哨兵值（{@code Integer.MIN_VALUE}）。
-     */
-    static final int TEMP_UNKNOWN = Integer.MIN_VALUE;
-    /**
-     * 电池温度（整摄氏度），或 {@link #TEMP_UNKNOWN}。
-     *
-     * <p>★ v75：改由 {@link #readBattery} 直接从 ACTION_BATTERY_CHANGED 的
-     * {@code EXTRA_TEMPERATURE} 写入 —— 功率读数删除后，不再需要
-     * {@code BatteryPresence} 那个独立的取数器（连带它的 3s 轮询一起没）。
-     * 温度随电池广播更新：电量/插拔/温度变化时平台都会发，够用。
-     */
-    static volatile int sBatteryTempC = TEMP_UNKNOWN;
-
     /**
      * ★ v77：图标色改为<b>按 host 隔离</b>（每处状态栏各一份）。
      *
@@ -638,27 +623,6 @@ final class TrioState {
         //   ACTION_BATTERY_CHANGED 的扩展 extra 里（见 readSamsungChargeExtras）。
         readSamsungChargeExtras(intent);
         readQuick(ctx, sBatteryCharging);
-        readTemperature(intent);
-    }
-
-    /**
-     * ★ v75：电池温度（v73 起由 {@code BatteryPresence} 单独取，v75 功率删除后
-     * 并入这里 —— 温度本来就在同一份广播的 extras 里，不必另起一套取数器）。
-     *
-     * <p>平台给的是 0.1°C 单位的整数，取整到整摄氏度；取不到时写哨兵
-     * {@link #TEMP_UNKNOWN}（读数整块不显示），而不是画一个 0°C 糊弄。
-     * 值真的变了才推重绘：温度是静态量，不靠它驱动每帧。
-     */
-    private static void readTemperature(Intent intent) {
-        final int raw = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE,
-                Integer.MIN_VALUE);
-        final int whole = (raw == Integer.MIN_VALUE)
-                ? TEMP_UNKNOWN
-                : Math.round(raw / 10f);
-        if (whole != sBatteryTempC) {
-            sBatteryTempC = whole;
-            TrioOverlay.invalidateAll();
-        }
     }
 
     private static void readPowerSave(Context ctx) {

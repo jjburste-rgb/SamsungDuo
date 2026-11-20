@@ -116,6 +116,11 @@ class SettingsRepository(context: Context) {
     fun setColorChargingOnLight(value: Int) = writeInt(Prefs.KEY_COLOR_CHARGING_ON_LIGHT, value)
     fun setColorLowOnDark(value: Int) = writeInt(Prefs.KEY_COLOR_LOW_ON_DARK, value)
     fun setColorLowOnLight(value: Int) = writeInt(Prefs.KEY_COLOR_LOW_ON_LIGHT, value)
+    fun setDotColorCustom(value: Boolean) = writeBoolean(Prefs.KEY_DOT_COLOR_CUSTOM, value)
+    fun setColorDotOnDark(value: Int) = writeInt(Prefs.KEY_COLOR_DOT_ON_DARK, value)
+    fun setColorDotOnLight(value: Int) = writeInt(Prefs.KEY_COLOR_DOT_ON_LIGHT, value)
+    fun setColorPowerSaveOnDark(value: Int) = writeInt(Prefs.KEY_COLOR_POWER_SAVE_ON_DARK, value)
+    fun setColorPowerSaveOnLight(value: Int) = writeInt(Prefs.KEY_COLOR_POWER_SAVE_ON_LIGHT, value)
 
     /** Restores all six role colours to their defaults in one write. */
     fun resetRoleColors() {
@@ -126,6 +131,10 @@ class SettingsRepository(context: Context) {
             putInt(Prefs.KEY_COLOR_CHARGING_ON_LIGHT, Prefs.DEF_COLOR_CHARGING_ON_LIGHT)
             putInt(Prefs.KEY_COLOR_LOW_ON_DARK, Prefs.DEF_COLOR_LOW_ON_DARK)
             putInt(Prefs.KEY_COLOR_LOW_ON_LIGHT, Prefs.DEF_COLOR_LOW_ON_LIGHT)
+            putInt(Prefs.KEY_COLOR_DOT_ON_DARK, Prefs.DEF_COLOR_DOT_ON_DARK)
+            putInt(Prefs.KEY_COLOR_DOT_ON_LIGHT, Prefs.DEF_COLOR_DOT_ON_LIGHT)
+            putInt(Prefs.KEY_COLOR_POWER_SAVE_ON_DARK, Prefs.DEF_COLOR_POWER_SAVE_ON_DARK)
+            putInt(Prefs.KEY_COLOR_POWER_SAVE_ON_LIGHT, Prefs.DEF_COLOR_POWER_SAVE_ON_LIGHT)
         }
         push { prefs ->
             prefs.putInt(Prefs.KEY_COLOR_CRITICAL_ON_DARK, Prefs.DEF_COLOR_CRITICAL_ON_DARK)
@@ -134,6 +143,10 @@ class SettingsRepository(context: Context) {
             prefs.putInt(Prefs.KEY_COLOR_CHARGING_ON_LIGHT, Prefs.DEF_COLOR_CHARGING_ON_LIGHT)
             prefs.putInt(Prefs.KEY_COLOR_LOW_ON_DARK, Prefs.DEF_COLOR_LOW_ON_DARK)
             prefs.putInt(Prefs.KEY_COLOR_LOW_ON_LIGHT, Prefs.DEF_COLOR_LOW_ON_LIGHT)
+            prefs.putInt(Prefs.KEY_COLOR_DOT_ON_DARK, Prefs.DEF_COLOR_DOT_ON_DARK)
+            prefs.putInt(Prefs.KEY_COLOR_DOT_ON_LIGHT, Prefs.DEF_COLOR_DOT_ON_LIGHT)
+            prefs.putInt(Prefs.KEY_COLOR_POWER_SAVE_ON_DARK, Prefs.DEF_COLOR_POWER_SAVE_ON_DARK)
+            prefs.putInt(Prefs.KEY_COLOR_POWER_SAVE_ON_LIGHT, Prefs.DEF_COLOR_POWER_SAVE_ON_LIGHT)
         }
         notifyModule()
     }
@@ -169,11 +182,9 @@ class SettingsRepository(context: Context) {
      * 走 margin（推/放原生图标）+ translationX（平移整组）两条路，同一个量。
      */
     fun setGlyphShift(value: Int) = writeInt(key(Prefs.KEY_GLYPH_SHIFT), value)
-    fun setPerfTemp(value: Boolean) = writeBoolean(key(Prefs.KEY_PERF_TEMP), value)
-    fun setPerfOuterMargin(value: Int) = writeInt(key(Prefs.KEY_PERF_OUTER_MARGIN), value)
-    fun setPerfOuterMarginRight(value: Int) = writeInt(key(Prefs.KEY_PERF_OUTER_MARGIN_RIGHT), value)
-    fun setPerfScale(value: Int) = writeInt(key(Prefs.KEY_PERF_SCALE), value)
-    fun setPerfWeight(value: Int) = writeInt(key(Prefs.KEY_PERF_WEIGHT), value)
+    fun setGlyphTopOffset(value: Int) = writeInt(key(Prefs.KEY_GLYPH_TOP_OFFSET), value)
+    fun setGlyphBottomOffset(value: Int) = writeInt(key(Prefs.KEY_GLYPH_BOTTOM_OFFSET), value)
+    fun setSignalDotScale(value: Int) = writeInt(key(Prefs.KEY_SIGNAL_DOT_SCALE), value)
     fun setGlyphScale(value: Int) = writeInt(key(Prefs.KEY_GLYPH_SCALE), value)
     fun setBurnInProtect(value: Boolean) = writeBoolean(Prefs.KEY_BURN_IN_PROTECT, value)
     fun setBurnInAmplitude(value: Int) = writeInt(Prefs.KEY_BURN_IN_AMPLITUDE, value)

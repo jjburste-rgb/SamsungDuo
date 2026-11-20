@@ -1,4 +1,4 @@
-package com.jsj.samsungduo;
+﻿package com.jsj.samsungduo;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -179,7 +179,7 @@ final class TrioRenderer {
         // ★ v73：「整体尺寸」≤100% 时只缩绘制、不动视图 —— 视图那一块是占位，
         //   动了就会挤压原生图标。所以乘在**统一的 scale** 上（与 INK_INSET
         //   同一个位置），描边/弧线/数字/信号点/环内类型字号一起缩。
-        //   perfTextSize 里算"图标有多高"也用同一乘积，两者不会各说各话。
+        //   环外读数与三合一用同一个乘积，两者不会各说各话。
         // ★ v75：>100% 时视图已随之一起放大（wantWidth 含 scale，否则墨迹
         //   超出视图画布会被 View 自身 canvas 裁掉），这里**不能再乘**
         //   glyphFit —— 双重缩放会让墨迹重新超出视图，前功尽弃。
@@ -492,15 +492,17 @@ final class TrioRenderer {
                                      int fg, TrioAppearance a) {
         final int left = (dual && slotLevels != null) ? slotLevels[0] : level;
         final int right = (dual && slotLevels != null) ? slotLevels[1] : level;
-        final int inactive = withAlpha(fg, a.trackAlpha);
+        final int dot = dotColor(a, fg);
+        final int inactive = withAlpha(dot, a.trackAlpha);
+        final float r = TrioGeometry.RECT_DOT_R * dotScale(a);
         final int leftActive = left < 0 ? 0 : Math.min(TrioGeometry.RECT_DOT_ROWS, left);
         final int rightActive = right < 0 ? 0 : Math.min(TrioGeometry.RECT_DOT_ROWS, right);
         for (int i = 0; i < TrioGeometry.RECT_DOT_ROWS; i++) {
             final float y = TrioGeometry.RECT_DOT_TOP + i * TrioGeometry.RECT_DOT_STEP;
-            FILL.setColor(i < leftActive ? fg : inactive);
-            c.drawCircle(TrioGeometry.RECT_DOT_LX, y, TrioGeometry.RECT_DOT_R, FILL);
-            FILL.setColor(i < rightActive ? fg : inactive);
-            c.drawCircle(TrioGeometry.RECT_DOT_RX, y, TrioGeometry.RECT_DOT_R, FILL);
+            FILL.setColor(i < leftActive ? dot : inactive);
+            c.drawCircle(TrioGeometry.RECT_DOT_LX, y, r, FILL);
+            FILL.setColor(i < rightActive ? dot : inactive);
+            c.drawCircle(TrioGeometry.RECT_DOT_RX, y, r, FILL);
         }
     }
 
@@ -611,9 +613,11 @@ final class TrioRenderer {
         if (level >= 0 && level < TrioGeometry.CRITICAL_LEVEL) {
             return dark ? a.criticalOnDark : a.criticalOnLight;
         }
-        // ★ v77：省电模式是否参与染色改为可关（默认开 = MIUI 语义）。
-        //   三星原生不因省电模式改电池图标颜色，他人实测"高电量也黄色"。
-        if ((powerSave && a.powerSaveTint) || low || (level >= 0 && level <= a.lowThreshold)) {
+        // ★ 省电模式现在有自己的颜色（默认绿色），不再借用低电量黄。
+        if (powerSave && a.powerSaveTint) {
+            return dark ? a.powerSaveOnDark : a.powerSaveOnLight;
+        }
+        if (low || (level >= 0 && level <= a.lowThreshold)) {
             return dark ? a.lowOnDark : a.lowOnLight;
         }
         if (charging) {
@@ -751,13 +755,16 @@ final class TrioRenderer {
      */
     private static void drawLevelDots(Canvas c, int level, int[] slotLevels, boolean dual,
                                      int fg, TrioAppearance a) {
-        final int inactive = withAlpha(fg, a.trackAlpha);
+        // 信号点颜色与大小：颜色可自定义（默认跟随前景色），大小是全局百分比。
+        final int dot = dotColor(a, fg);
+        final int inactive = withAlpha(dot, a.trackAlpha);
+        final float k = dotScale(a);
         if (!dual || slotLevels == null) {
             final int active = level < 0 ? 0 : Math.min(TrioGeometry.DOTS.length, level);
             for (int i = 0; i < TrioGeometry.DOTS.length; i++) {
-                FILL.setColor(i < active ? fg : inactive);
+                FILL.setColor(i < active ? dot : inactive);
                 c.drawCircle(TrioGeometry.DOTS[i][0], TrioGeometry.DOTS[i][1],
-                        TrioGeometry.DOT_R, FILL);
+                        TrioGeometry.DOT_R * k, FILL);
             }
             return;
         }
@@ -766,10 +773,23 @@ final class TrioRenderer {
             final int step = i % row;
             final int slotLevel = slotLevels[i / row];
             final int active = slotLevel < 0 ? 0 : Math.min(row, slotLevel);
-            FILL.setColor(step < active ? fg : inactive);
+            FILL.setColor(step < active ? dot : inactive);
             c.drawCircle(TrioGeometry.DOTS_DUAL[i][0], TrioGeometry.DOTS_DUAL[i][1],
-                    TrioGeometry.DUAL_DOT_R, FILL);
+                    TrioGeometry.DUAL_DOT_R * k, FILL);
         }
+    }
+
+    /** 自定义信号点颜色；未开启时跟随状态栏前景色。 */
+    static int dotColor(TrioAppearance a, int fg) {
+        if (a == null || !a.dotColorCustom) {
+            return fg;
+        }
+        return isDarkBackground(fg) ? a.dotOnDark : a.dotOnLight;
+    }
+
+    /** 信号点大小系数（1.0 = 出厂尺寸）。 */
+    static float dotScale(TrioAppearance a) {
+        return (a == null) ? 1f : a.signalDotScale / 100f;
     }
 
     // ------------------------------------------------- out-of-ring signal
@@ -932,6 +952,9 @@ final class TrioRenderer {
         final float dotCy = baseline
                 + (TrioGeometry.STACK_DOT_GAP + TrioGeometry.STACK_DOT_D / 2f) * scale;
         final int inactive = withAlpha(fg, a.trackAlpha);
+        // 环外读数的点行同样跟随「信号点颜色」，但大小由「环外信号大小」决定。
+        final int dotFg = dotColor(a, fg);
+        final int dotInactive = withAlpha(dotFg, a.trackAlpha);
         for (int i = 0; i < columns; i++) {
             final float left = x0 + i * TrioGeometry.STACK_PITCH * scale;
             FILL.setColor(i < bars ? fg : inactive);
@@ -939,7 +962,7 @@ final class TrioRenderer {
                     left + barW, baseline);
             c.drawRoundRect(OUT_BAR, radius, radius, FILL);
             if (dotRow) {
-                FILL.setColor(i < dots ? fg : inactive);
+                FILL.setColor(i < dots ? dotFg : dotInactive);
                 c.drawCircle(left + radius, dotCy, dotR, FILL);
             }
         }
@@ -1048,196 +1071,6 @@ final class TrioRenderer {
         if (shrunk) {
             TEXT.setTextSize(suffixSize);
             c.drawText(suffix, baseWidth * scaleX, baseline, TEXT);
-        }
-        TEXT.setTextAlign(Paint.Align.CENTER);
-        TEXT.setTextScaleX(1f);
-    }
-
-    // ------------------------------------------- 充电功率 / 电池温度读数（v73）
-
-    /**
-     * ★ v73：两项读数的换行分隔符（功率一行、温度一行）。
-     *
-     * <p>用 {@code '\n'} 而不是画两次：文本是"内容"的唯一表述，
-     * 测量、占位、绘制都从它出发，才不会有第三处各算一套。
-     */
-    private static final char PERF_BREAK = '\n';
-
-    /**
-     * ★ v73：两项都开时字号自适应的下限（基准字号的 60%）。
-     *
-     * <p>宿主还没被系统量出来时不许把读数缩到看不清，所以这里封底；
-     * 后果是极端窄的行里两行会略高过一个图标，而不是缩成一团。
-     */
-    private static final float PERF_MIN_SIZE_RATIO = 0.6f;
-
-    /**
-     * ★ v75：读数文本（只剩电池温度）。没内容返回 {@code ""}（整块不占位）。
-     *
-     * <p>★ v75：充电功率读数已删除 —— 用户实测三星上不显示（平台不报
-     * {@code CURRENT_NOW}），且打开开关还会让状态栏闪一下，明确说
-     * "三星不需要这个"。温度走 {@code TrioState.readBattery} 的广播链路。
-     */
-    static String perfText(boolean tempOn, int tempC) {
-        if (tempOn && tempC != TrioState.TEMP_UNKNOWN) {
-            // 度数符号写成 unicode 转义，源码保持 ASCII：构建机上没有哪把键盘
-            // 保证能敲出读数里唯一这一个非 ASCII 字符。
-            return tempC + "\u00B0C";
-        }
-        return "";
-    }
-
-    /** 文本里有多少行读数（按 {@link #PERF_BREAK} 数）。 */
-    static int perfLines(String text) {
-        int lines = 1;
-        for (int i = 0; i < text.length(); i++) {
-            if (text.charAt(i) == PERF_BREAK) {
-                lines++;
-            }
-        }
-        return lines;
-    }
-
-    /**
-     * ★ v73：读数字号。
-     *
-     * <p>★ v75：只剩温度一项（功率已删），两行自适应分支暂时走不到，
-     * 保留给将来。单项保持环外类型字号（单行，本来就放得下）。
-     * 图标高度取<b>绘制出来的</b>高度（与 glyph 同一套 inkScale × glyphFit），
-     * 所以整体尺寸缩到 60% 时读数也跟着缩，不会按一个已经不在那儿的图标去排。
-     *
-     * <p>用户的「读数整体尺寸」乘在<b>每一种</b>答案之上（单项的基准值、
-     * 两项的自适应值、量不到宿主的兜底值）—— 只缩两项的话，
-     * 开一个开关时拖动滑块什么都不会动，再开一个反而会跳。
-     *
-     * <p>★ v75：>100% 时 hostW/H 已含 scale（视图随墨迹一起放大），
-     * 与 {@link #drawInto} 同理不再乘 glyphFit。
-     */
-    static float perfTextSize(String text, int hostW, int hostH,
-                              float baseSize, TrioAppearance a) {
-        final float factor = (a == null) ? 1f : a.perfFit();
-        final int lines = perfLines(text);
-        if (lines < 2 || hostW <= 0 || hostH <= 0) {
-            return baseSize * factor;
-        }
-        final float fit = inkScale(hostW, hostH, a.rect)
-                * (((a == null) ? 100 : a.glyphScale) > 100 ? 1f : a.glyphFit());
-        if (fit <= 0f) {
-            return baseSize * factor;
-        }
-        final float inkH = a.rect ? TrioGeometry.RECT_INK_H : TrioGeometry.INK_H;
-        final float icon = inkH * fit;
-        final float lineHeight = perfLineHeight(baseSize, a.perfWeight);
-        if (lineHeight <= 0f) {
-            return baseSize * factor;
-        }
-        final float size = baseSize * (icon / lines) / lineHeight;
-        return Math.max(baseSize * PERF_MIN_SIZE_RATIO, Math.min(baseSize, size)) * factor;
-    }
-
-    /** 一行读数在该字号下占的高度（按字体度量，探针量，不靠 View）。 */
-    static float perfLineHeight(float size, int weight) {
-        TEXT.setTypeface(typefaceFor(weight));
-        TEXT.setTextSize(size);
-        final Paint.FontMetrics fm = TEXT.getFontMetrics();
-        return fm.descent - fm.ascent;
-    }
-
-    /**
-     * ★ v73：读数占位宽度 —— <b>刻意不是当前文本的宽度</b>。
-     *
-     * <p>上游 1.6.12 的真机教训：功率约每秒更新一次，{@code 0.0W} 与 {@code 6.1W}
-     * 宽度不同（102px 对 92px），预留宽度跟着变 → 整排原生图标每秒横移一次，
-     * 用户原话"功率数字的变化会导致左侧图标位置跳动"。
-     *
-     * <p>所以这里量<b>最宽形式</b>：每位数字换成这个字体里最宽的那个数字
-     * （问画笔要，不拍脑袋），逐行测、取最宽的一行。只剩"位数变化"
-     * 会动预留（{@code 9.9W} → {@code 10W}），那是一步，不是抖动。
-     *
-     * <p> deliberately 不走布局：把探针串真的排一次会把布局拖进每秒路径。
-     */
-    static int perfWidth(String text, float size, TrioAppearance a) {
-        if (text == null || text.isEmpty() || size <= 0f) {
-            return 0;
-        }
-        TEXT.setTypeface(typefaceFor(a == null ? 700 : a.perfWeight));
-        TEXT.setTextScaleX(1f);
-        TEXT.setTextSize(size);
-        char widest = '0';
-        float best = -1f;
-        for (char c = '0'; c <= '9'; c++) {
-            final float w = TEXT.measureText(String.valueOf(c));
-            if (w > best) {
-                best = w;
-                widest = c;
-            }
-        }
-        // 逐行测：整串一次量会把两行加一起（换行符对画笔只是一个字符），
-        // 预留出两倍真实宽度。
-        final StringBuilder probe = new StringBuilder(text.length());
-        float width = 0f;
-        for (int i = 0; i <= text.length(); i++) {
-            if (i == text.length() || text.charAt(i) == PERF_BREAK) {
-                width = Math.max(width, TEXT.measureText(probe.toString()));
-                probe.setLength(0);
-                continue;
-            }
-            final char c = text.charAt(i);
-            probe.append(c >= '0' && c <= '9' ? widest : c);
-        }
-        return (int) Math.ceil(width);
-    }
-
-    /** 读数占位高度（行数 × 一行高度）。 */
-    static int perfHeight(String text, float size, TrioAppearance a) {
-        if (text == null || text.isEmpty() || size <= 0f) {
-            return 0;
-        }
-        final int lines = perfLines(text);
-        return Math.max(1, (int) Math.ceil(perfLineHeight(size, a == null ? 700 : a.perfWeight)
-                * lines));
-    }
-
-    /**
-     * 把读数画进属于它自己的 w×h 画布，左对齐，整体底边落在 {@code bottomY}。
-     *
-     * <p>★ v76：最后一行文字底 = {@code bottomY}（信号条 baseline 位置，由
-     * {@code computeSideBaseline} 现算）—— 信号条自身位置不动，只把读数挪过去
-     * 对齐它的下底边（修复用户实测"5G/温度比信号条高 12px"）。
-     *
-     * <p>左对齐而不是居中：这块画布的宽度是"最宽形式"量出来的（见
-     * {@link #perfWidth}），比当前文本宽；文字居中会随位数变化左右晃，
-     * 左对齐则钉死在左边，读数长短变化时只是右边空多少的问题。
-     */
-    static void drawPerf(Canvas c, int w, int h, String text, float size, int fg,
-                         TrioAppearance a, float bottomY) {
-        if (text == null || text.isEmpty() || size <= 0f || w <= 0 || h <= 0) {
-            return;
-        }
-        final int weight = (a == null) ? 700 : a.perfWeight;
-        TEXT.setTypeface(typefaceFor(weight));
-        TEXT.setTextAlign(Paint.Align.LEFT);
-        TEXT.setTextScaleX(1f);
-        TEXT.setColor(fg);
-        TEXT.setTextSize(size);
-        final Paint.FontMetrics fm = TEXT.getFontMetrics();
-        final float lineHeight = fm.descent - fm.ascent;
-        final int lines = perfLines(text);
-        // ★ v76：底边对齐 bottomY —— 最后一行**基线** = bottomY（数字墨迹底即
-        //   基线，descent 不占），往上推 (lines-1) 行得第一行基线。
-        float baseline = bottomY - (lines - 1) * lineHeight;
-        int start = 0;
-        for (int i = 0; i < lines; i++) {
-            final String line;
-            if (i == lines - 1) {
-                line = text.substring(start);
-            } else {
-                final int br = text.indexOf(PERF_BREAK, start);
-                line = text.substring(start, br);
-                start = br + 1;
-            }
-            c.drawText(line, 0f, baseline, TEXT);
-            baseline += lineHeight;
         }
         TEXT.setTextAlign(Paint.Align.CENTER);
         TEXT.setTextScaleX(1f);
@@ -1565,7 +1398,9 @@ final class TrioRenderer {
      * drawn beside it.
      */
     static Typeface typefaceFor(int weight) {
-        return Typeface.create(TEXT_BASE, weight, false);
+        // Typeface.create 只接受 1..1000；滑块放到 1200 时平台侧按 1000 处理。
+        final int w = Math.max(1, Math.min(1000, weight));
+        return Typeface.create(TEXT_BASE, w, false);
     }
 
     // ----------------------------------------------------------- path builders
@@ -2128,7 +1963,9 @@ final class TrioRenderer {
         final boolean bottomRow = cap == null || cap.dotsIn(TrioAppearance.Zone.BOTTOM);
         final int top = (dual && slotLevels != null) ? slotLevels[0] : level;
         final int bottom = (dual && slotLevels != null) ? slotLevels[1] : level;
-        final int inactive = withAlpha(fg, a.trackAlpha);
+        final int dot = dotColor(a, fg);
+        final int inactive = withAlpha(dot, a.trackAlpha);
+        final float r = TrioGeometry.CAP_DOT_R * dotScale(a);
         final int topActive = top < 0 ? 0 : Math.min(TrioGeometry.RECT_DOT_ROWS, top);
         final int bottomActive = bottom < 0 ? 0 : Math.min(TrioGeometry.RECT_DOT_ROWS, bottom);
         final float topY = TrioGeometry.capDotTopY();
@@ -2138,12 +1975,12 @@ final class TrioRenderer {
         for (int i = 0; i < TrioGeometry.RECT_DOT_ROWS; i++) {
             final float x = first + i * TrioGeometry.CAP_DOT_PITCH;
             if (topRow) {
-                FILL.setColor(i < topActive ? fg : inactive);
-                c.drawCircle(x, topY, TrioGeometry.CAP_DOT_R, FILL);
+                FILL.setColor(i < topActive ? dot : inactive);
+                c.drawCircle(x, topY, r, FILL);
             }
             if (bottomRow) {
-                FILL.setColor(i < bottomActive ? fg : inactive);
-                c.drawCircle(x, bottomY, TrioGeometry.CAP_DOT_R, FILL);
+                FILL.setColor(i < bottomActive ? dot : inactive);
+                c.drawCircle(x, bottomY, r, FILL);
             }
         }
     }
